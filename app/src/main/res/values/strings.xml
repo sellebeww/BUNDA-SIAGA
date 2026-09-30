@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BUNDA SIAGA</string>
+    <string name="back">Kembali</string>
+    <string name="menu">Menu lainnya</string>
+    <string name="unknown">Tidak diketahui</string>
+    <string name="none">Tidak ada</string>
+    <string name="not_measured">Tidak diukur</string>
+    <string name="weeks">%1$d minggu</string>
+    <string name="minutes_fmt">%1$s menit</string>
+    <string name="mock_label">MOCK: DATA CONTOH</string>
+    <string name="needs_review_label">Teks panduan ini masih DRAFT dan perlu ditinjau bidan/dokter.</string>
+
+    <!-- Level: warna selalu berpasangan dengan ikon dan kata-kata ini -->
+    <string name="level_merah">MERAH</string>
+    <string name="level_merah_action">Prioritas rujuk segera</string>
+    <string name="level_kuning">KUNING</string>
+    <string name="level_kuning_action">Perlu diperiksa bidan, paling lambat 24 jam</string>
+    <string name="level_hijau">HIJAU</string>
+    <string name="level_hijau_action">Pantau rutin</string>
+
+    <!-- Notifikasi -->
+    <string name="channel_incoming">Rujukan masuk</string>
+    <string name="channel_ack">Balasan puskesmas</string>
+    <string name="channel_sending">Pengiriman rujukan</string>
+    <string name="notif_new_case">Rujukan %1$s masuk: %2$s dari %3$s</string>
+    <string name="notif_new_case_unparsed">Pesan BUNDA SIAGA masuk (format tidak dikenal)</string>
+    <string name="notif_open_to_ack">Buka untuk melihat dan membalas.</string>
+    <string name="notif_ack_title">Balasan dari puskesmas</string>
+    <string name="notif_ack_body">Puskesmas membalas: %1$s</string>
+    <string name="notif_public">Ada pesan rujukan baru.</string>
+    <string name="fgs_title">Mengirim SMS BUNDA SIAGA</string>
+    <string name="fgs_text">Rujukan, balasan, atau kabar kapasitas dicoba terus otomatis sampai terkirim.</string>
+
+    <!-- Pengaturan awal -->
+    <string name="setup_title">Pengaturan</string>
+    <string name="setup_intro">Alat bantu untuk mengenali tanda bahaya kehamilan dan mengirim rujukan lewat SMS, tanpa internet. Hasilnya adalah sinyal prioritas, bukan diagnosis.</string>
+    <string name="setup_role">Siapa yang memakai HP ini?</string>
+    <string name="role_kader">Kader posyandu</string>
+    <string name="role_kader_desc">Memeriksa tanda bahaya dan mengirim rujukan. Bisa tanpa alat tensi.</string>
+    <string name="role_bidan">Bidan desa</string>
+    <string name="role_bidan_desc">Memeriksa, mengirim, dan juga menerima rujukan dari kader.</string>
+    <string name="role_puskesmas">Puskesmas</string>
+    <string name="role_puskesmas_desc">Menerima rujukan masuk dan membalas (siap / penuh / hubungi).</string>
+    <string name="setup_name">Nama Anda atau nama fasilitas</string>
+    <string name="setup_name_hint">Contoh: Bu Mince, atau Puskesmas Contoh</string>
+    <string name="setup_lokasi">Kode lokasi</string>
+    <string name="setup_lokasi_hint">Huruf dan angka, maks. 8. Contoh: DSA12. Ikut terkirim di SMS.</string>
+    <string name="setup_dusun">Dusun (untuk perkiraan waktu tempuh)</string>
+    <string name="setup_dest">Nomor HP tujuan rujukan</string>
+    <string name="setup_dest_hint">Nomor HP puskesmas atau bidan yang menerima rujukan.</string>
+    <string name="setup_callback">Nomor untuk telepon balik (boleh kosong)</string>
+    <string name="setup_callback_hint">Biasanya nomor HP ini. Dipakai di skrip baca manual.</string>
+    <string name="setup_server">Alamat server dinas (boleh kosong)</string>
+    <string name="setup_server_hint">Untuk meneruskan ringkasan kasus saat ada internet. Contoh: https://server-dinkes</string>
+    <string name="setup_token">Token server (boleh kosong)</string>
+    <string name="setup_token_hint">Diberikan oleh pengelola server.</string>
+    <string name="setup_save">Simpan</string>
+    <string name="setup_incomplete">Pilih peran, isi nama, kode lokasi, dan nomor tujuan (untuk kader/bidan).</string>
+    <string name="perm_title">Izin SMS</string>
+    <string name="perm_body">BUNDA SIAGA perlu izin SMS untuk mengirim rujukan tanpa internet dan menerima balasan puskesmas. Aplikasi hanya membaca SMS yang diawali kode BS1.\n\nPerhatian: SMS tidak terenkripsi. Karena itu yang dikirim hanya kode pasien, bukan nama lengkap.</string>
+    <string name="perm_continue">Lanjut</string>
+    <string name="perm_denied_title">Izin SMS belum diberikan</string>
+    <string name="perm_denied_body">Tanpa izin SMS, aplikasi tidak bisa mengirim otomatis dan tidak bisa mencoba ulang sendiri.</string>
+    <string name="perm_open_settings">Buka pengaturan izin</string>
+    <string name="perm_use_sms_app">Kirim lewat aplikasi SMS biasa</string>
+    <string name="perm_sms_app_note">Jika lewat aplikasi SMS biasa, BUNDA SIAGA tidak bisa memantau apakah SMS terkirim. Pastikan Anda menekan tombol kirim, lalu telepon untuk memastikan.</string>
+
+    <!-- Beranda -->
+    <string name="home_hello">Halo, %1$s</string>
+    <string name="home_start_exam">Periksa Ibu Hamil</string>
+    <string name="home_inbox">Rujukan masuk</string>
+    <string name="home_no_dest">Nomor tujuan rujukan belum diisi. Buka Menu → Pengaturan.</string>
+    <string name="home_recent">Rujukan terakhir</string>
+    <string name="home_recent_empty">Belum ada rujukan yang dikirim.</string>
+    <string name="menu_faskes">Faskes dan waktu tempuh</string>
+    <string name="menu_stabilization">Panduan sambil menunggu</string>
+    <string name="menu_settings">Pengaturan</string>
+    <string name="menu_debug">Data, metrik, dan simulasi</string>
+    <string name="menu_honesty">Yang nyata dan yang belum</string>
+
+    <!-- Pengantar pemeriksaan -->
+    <string name="intro_title">Data ibu</string>
+    <string name="intro_initials">Inisial ibu</string>
+    <string name="intro_initials_hint">Hanya inisial yang disimpan dan dikirim, bukan nama lengkap.</string>
+    <string name="intro_initials_preview">Akan tercatat sebagai: %1$s + nomor urut</string>
+    <string name="intro_usia">Usia kehamilan</string>
+    <string name="intro_usia_weeks">Minggu (1 sampai 45)</string>
+    <string name="intro_usia_unknown">Tidak tahu</string>
+    <string name="intro_td">Tekanan darah</string>
+    <string name="intro_td_measured">Sudah diukur</string>
+    <string name="intro_sys">Atas</string>
+    <string name="intro_dia">Bawah</string>
+    <string name="intro_td_implausible">Angka tidak masuk akal. Periksa lagi: angka atas harus lebih besar dari angka bawah.</string>
+    <string name="intro_td_no_device">Tidak ada alat tensi</string>
+    <string name="intro_td_not_yet">Belum diukur</string>
+    <string name="intro_next">Mulai pertanyaan</string>
+    <string name="intro_fill_all">Isi inisial (minimal 2 huruf), usia kehamilan atau pilih Tidak tahu, dan tekanan darah yang masuk akal.</string>
+
+    <!-- Pertanyaan -->
+    <string name="question_progress">Pertanyaan %1$d dari %2$d</string>
+    <string name="question_critical">Pertanyaan penting: jika belum diperiksa, hasil tidak bisa HIJAU.</string>
+    <string name="answer_yes">YA</string>
+    <string name="answer_no">TIDAK</string>
+    <string name="answer_not_checked">BELUM DIPERIKSA</string>
+    <string name="fetal_normal">Bergerak seperti biasa</string>
+    <string name="fetal_less">Berkurang</string>
+    <string name="fetal_none">Tidak bergerak sama sekali</string>
+    <string name="bleeding_how_much">Berapa banyak darahnya?</string>
+    <string name="bleeding_spot">Bercak</string>
+    <string name="bleeding_medium">Sedang</string>
+    <string name="bleeding_heavy">Banyak</string>
+    <string name="bleeding_unknown">Tidak tahu</string>
+
+    <!-- Hasil -->
+    <string name="result_title">Hasil pemeriksaan</string>
+    <string name="result_signal_label">Sinyal prioritas rujukan (bukan diagnosis):</string>
+    <string name="result_patient">Kode pasien: %1$s</string>
+    <string name="result_why">Kenapa hasilnya begini?</string>
+    <string name="result_no_rules">Semua pertanyaan penting sudah dijawab dan tidak ada tanda bahaya yang ditemukan.</string>
+    <string name="result_rule_id">Aturan %1$s → %2$s</string>
+    <string name="result_incomplete">Belum diperiksa</string>
+    <string name="result_advice">Saran</string>
+    <string name="result_send">Kirim Rujukan</string>
+    <string name="result_send_anyway">Tetap kirim ke bidan/puskesmas</string>
+    <string name="result_script">Skrip baca manual (radio/telepon)</string>
+    <string name="result_data_used">Data yang dipakai</string>
+    <string name="result_version">Versi aturan: %1$s (%2$s)</string>
+    <string name="result_done">Selesai, kembali ke awal</string>
+
+    <!-- Konfirmasi -->
+    <string name="confirm_title">Periksa sebelum kirim</string>
+    <string name="confirm_check">Pastikan data di bawah ini benar. Inilah yang akan dikirim:</string>
+    <string name="confirm_content">Isi rujukan</string>
+    <string name="confirm_to">Dikirim ke</string>
+    <string name="confirm_no_dest">Nomor tujuan belum diisi</string>
+    <string name="confirm_raw">Teks SMS persis</string>
+    <string name="confirm_raw_note">%1$d dari 160 karakter (1 SMS)</string>
+    <string name="confirm_unencrypted">SMS tidak terenkripsi. Karena itu hanya kode pasien yang dikirim, bukan nama.</string>
+    <string name="confirm_send">Kirim sekarang</string>
+    <string name="confirm_go_setup">Isi nomor tujuan di Pengaturan</string>
+
+    <!-- Status -->
+    <string name="status_title">Status rujukan</string>
+    <string name="status_for">Pasien %1$s · %2$s</string>
+    <string name="status_now">Status sekarang</string>
+    <string name="state_draft">Belum dikirim</string>
+    <string name="state_queued">Dalam antrian</string>
+    <string name="state_sending">Sedang dikirim</string>
+    <string name="state_sent">Terkirim ke jaringan</string>
+    <string name="state_delivered">Sampai di HP tujuan</string>
+    <string name="state_acked">Diterima puskesmas: %1$s</string>
+    <string name="state_failed_retrying">Belum terkirim, akan dicoba lagi</string>
+    <string name="state_expired">Belum terkirim, percobaan otomatis berhenti</string>
+    <string name="status_retry_in">Penyebab: %1$s. Dicoba lagi otomatis dalam %2$d detik, tanpa perlu menekan apa pun.</string>
+    <string name="status_sending_note">Menunggu jawaban dari jaringan seluler.</string>
+    <string name="status_sent_note">Jaringan sudah menerima SMS. Ini belum berarti puskesmas sudah membacanya.</string>
+    <string name="status_delivered_note">SMS sudah sampai di HP tujuan. Belum ada balasan dari petugas.</string>
+    <string name="status_acked_note">Petugas di tujuan sudah membalas: %1$s.</string>
+    <string name="status_expired_note">Sudah dicoba berkali-kali tanpa hasil. Tekan Coba lagi, atau telepon sekarang.</string>
+    <string name="status_attempts">Jumlah percobaan: %1$d</string>
+    <string name="status_steps">Tahapan</string>
+    <string name="step_queued">Masuk antrian</string>
+    <string name="step_sent">Terkirim ke jaringan</string>
+    <string name="step_delivered">Sampai di HP tujuan (laporan operator)</string>
+    <string name="step_acked">Dibalas petugas</string>
+    <string name="step_not_yet">Belum</string>
+    <string name="status_delivery_best_effort">Laporan sampai dari operator tidak selalu datang. Yang pasti hanya balasan dari petugas.</string>
+    <string name="status_ack_not_ready">Tujuan belum siap menerima. Telepon untuk mencari fasilitas lain.</string>
+    <string name="status_escalate_title">Belum ada balasan</string>
+    <string name="status_escalate_body">Jangan hanya menunggu. Telepon puskesmas/bidan sekarang, atau bacakan skrip lewat radio/HT.</string>
+    <string name="status_retry_now">Coba lagi sekarang</string>
+    <string name="status_call">Telepon tujuan</string>
+    <string name="err_no_service">tidak ada sinyal</string>
+    <string name="err_radio_off">radio HP mati (mode pesawat?)</string>
+    <string name="err_permission">izin SMS belum diberikan</string>
+    <string name="err_timeout">tidak ada jawaban dari jaringan</string>
+    <string name="err_generic">gagal kirim</string>
+
+    <!-- Kolom rujukan yang mudah dibaca -->
+    <string name="field_patient">Kode pasien</string>
+    <string name="field_level">Tingkat</string>
+    <string name="field_ga">Usia kehamilan</string>
+    <string name="field_bp">Tekanan darah</string>
+    <string name="field_signs">Tanda bahaya</string>
+    <string name="field_location">Lokasi</string>
+    <string name="field_time">Tanggal, jam</string>
+    <string name="field_msgid">Nomor pesan</string>
+
+    <!-- Skrip baca manual -->
+    <string name="script_title">Skrip baca manual</string>
+    <string name="script_intro">Jika SMS tidak bisa terkirim, bacakan teks ini lewat telepon, radio, atau HT, atau tuliskan untuk dibawa kurir.</string>
+    <string name="script_copy">Salin teks</string>
+
+    <!-- Puskesmas -->
+    <string name="inbox_title">Rujukan masuk</string>
+    <string name="inbox_sorted">Urut: MERAH dulu, lalu yang terbaru.</string>
+    <string name="inbox_empty">Belum ada rujukan masuk.</string>
+    <string name="inbox_replied">Sudah dibalas: %1$s</string>
+    <string name="inbox_not_replied">BELUM DIBALAS</string>
+    <string name="inbox_unparsed_chip">FORMAT?</string>
+    <string name="case_title">Detail rujukan</string>
+    <string name="case_signal_note">Tingkat ini adalah sinyal prioritas dari aplikasi pengirim, bukan diagnosis.</string>
+    <string name="case_data">Isi rujukan</string>
+    <string name="case_unverified">Pesan ini tanpa kode pengecekan (diketik manual). Pastikan lewat telepon.</string>
+    <string name="case_unparsed_title">Format tidak dikenal</string>
+    <string name="case_unparsed_body">Pesan diawali kode BUNDA SIAGA tetapi tidak bisa dibaca otomatis. Baca teks aslinya dan telepon pengirim.</string>
+    <string name="case_from">Pengirim</string>
+    <string name="case_sender">Nomor</string>
+    <string name="case_received">Diterima</string>
+    <string name="case_duplicates">Pesan ganda diterima</string>
+    <string name="case_call">Telepon pengirim</string>
+    <string name="case_reply">Balas pengirim</string>
+    <string name="case_reply_note">Balasan dikirim lewat SMS ke pengirim. Status di HP pengirim berubah menjadi Diterima.</string>
+    <string name="case_replied_with">Sudah dibalas: %1$s</string>
+    <string name="ack_ready">Siap menerima</string>
+    <string name="ack_full">Penuh / tidak siap</string>
+    <string name="ack_callback">Minta ditelepon</string>
+
+    <!-- Ringkasan -->
+    <string name="summary_title">Ringkasan</string>
+    <string name="summary_note">Dihitung dari data di HP ini saja. Kasus simulasi tidak dihitung.</string>
+    <string name="summary_by_level">Jumlah per tingkat</string>
+    <string name="summary_unparsed">Format tidak dikenal</string>
+    <string name="summary_ack">Balasan</string>
+    <string name="summary_replied">Sudah dibalas</string>
+    <string name="summary_avg_ack">Rata-rata waktu sampai dibalas</string>
+    <string name="summary_no_data">Belum ada data.</string>
+    <string name="summary_by_location">Per lokasi</string>
+    <string name="summary_sync">Kirim ke server dinas</string>
+    <string name="summary_sync_off">Tidak aktif (alamat server kosong). Aplikasi tetap bekerja penuh tanpa server.</string>
+    <string name="summary_sync_on">Ke %1$s. Belum terkirim: %2$d kasus (menunggu internet).</string>
+
+    <!-- Faskes -->
+    <string name="faskes_missing">Data faskes tidak tersedia di HP ini.</string>
+    <string name="faskes_updated">Data diperbarui %1$s</string>
+    <string name="faskes_from">Dari: %1$s</string>
+    <string name="faskes_no_dusun">dusun belum dipilih di Pengaturan</string>
+    <string name="faskes_travel">Perkiraan waktu tempuh</string>
+    <string name="faskes_travel_value">%1$d jam %2$d menit</string>
+    <string name="faskes_capacity">Kapasitas</string>
+    <string name="faskes_capacity_updated">Kapasitas diperbarui</string>
+    <string name="faskes_call">Telepon %1$s</string>
+    <string name="faskes_estimate_note">Waktu tempuh adalah perkiraan, bukan pelacakan langsung. Kapasitas diisi manual dan bisa sudah berubah: telepon dulu.</string>
+    <string name="age_today">hari ini</string>
+    <string name="age_days">%1$d hari lalu</string>
+
+    <!-- Debug / simulasi -->
+    <string name="sim_section">Mode simulasi (untuk demo)</string>
+    <string name="sim_explain">Mode simulasi bisa berpura-pura tidak ada sinyal, supaya antrian dan kirim ulang otomatis bisa diperlihatkan. Saat aktif, pita ungu MODE SIMULASI selalu tampil. SMS yang terkirim setelah sinyal dipulihkan adalah SMS sungguhan.</string>
+    <string name="sim_mode">Aktifkan mode simulasi</string>
+    <string name="sim_no_service">Simulasikan tidak ada sinyal</string>
+    <string name="sim_inject">Masukkan rujukan simulasi ke kotak masuk</string>
+    <string name="sim_banner">MODE SIMULASI</string>
+    <string name="sim_banner_no_service">MODE SIMULASI: sinyal dibuat mati</string>
+    <string name="sim_case_label">SIMULASI</string>
+    <string name="sim_ack_local">Kasus simulasi: balasan hanya dicatat di HP ini, tidak ada SMS dikirim.</string>
+    <string name="privacy_section">Privasi layar</string>
+    <string name="secure_screens">Blokir tangkapan layar (disarankan tetap aktif)</string>
+    <string name="metrics_section">Metrik (diukur di HP ini)</string>
+    <string name="metrics_note">Angka ini hanya dari pemakaian di HP ini. Bukan hasil uji lapangan.</string>
+    <string name="metrics_export">Ekspor CSV</string>
+    <string name="metrics_recent">Kejadian terakhir</string>
+    <string name="rules_version_fmt">Aturan: %1$s · %2$s</string>
+
+    <!-- Kejujuran -->
+    <string name="h_intro">Supaya tidak ada yang salah paham, ini status jujur setiap bagian aplikasi.</string>
+    <string name="h_rules">Aturan tanda bahaya</string>
+    <string name="h_rules_v">BELUM DIVALIDASI. Disusun dari pedoman umum sebagai draft dan wajib ditinjau bidan/dokter sebelum dipakai untuk pasien sungguhan.</string>
+    <string name="h_sms">Pengiriman SMS</string>
+    <string name="h_sms_v">NYATA. Memakai SMS biasa dari kartu SIM, tanpa internet.</string>
+    <string name="h_ack">Balasan puskesmas (ACK)</string>
+    <string name="h_ack_v">NYATA. Dikirim lewat SMS oleh petugas yang menekan tombol balas.</string>
+    <string name="h_delivery">Laporan sampai</string>
+    <string name="h_delivery_v">TIDAK PASTI. Bergantung operator; bisa tidak pernah datang.</string>
+    <string name="h_encrypt">Keamanan SMS</string>
+    <string name="h_encrypt_v">SMS TIDAK TERENKRIPSI. Karena itu hanya kode pasien dan data minimal yang dikirim. Data di HP disimpan terenkripsi.</string>
+    <string name="h_faskes">Data faskes dan waktu tempuh</string>
+    <string name="h_faskes_v">MOCK. Contoh saja, bukan data nyata.</string>
+    <string name="h_retry">Kirim ulang otomatis</string>
+    <string name="h_retry_v">NYATA, dengan batas: penghemat baterai HP tertentu bisa memperlambat percobaan saat aplikasi tertutup lama.</string>
+    <string name="h_sim">Mode simulasi</string>
+    <string name="h_sim_v">Hanya untuk demo, selalu diberi tanda ungu di layar.</string>
+    <string name="h_field">Uji lapangan</string>
+    <string name="h_field_v">BELUM ADA. Belum diuji dengan kader, bidan, atau pasien sungguhan.</string>
+    <string name="h_data">Data pasien</string>
+    <string name="h_data_v">Hanya inisial dan nomor urut, disimpan terenkripsi di HP, tidak ikut cadangan otomatis.</string>
+    <!-- Mode NIFAS -->
+    <string name="home_start_nifas">Periksa Ibu Nifas (sudah melahirkan)</string>
+    <string name="intro_title_nifas">Data ibu nifas</string>
+    <string name="intro_hari">Sudah berapa hari sejak melahirkan?</string>
+    <string name="intro_hari_label">Hari ke- (0 = hari melahirkan)</string>
+    <string name="intro_hari_hint">Masa nifas: hari ke-0 sampai ke-%1$d.</string>
+    <string name="intro_hari_too_late">Lebih dari %1$d hari: sudah di luar masa nifas. Untuk keluhan lain, hubungi bidan.</string>
+    <string name="intro_hari_unknown">Tidak tahu</string>
+    <string name="intro_fill_all_nifas">Isi inisial (minimal 2 huruf), hari setelah melahirkan (0 sampai 42) atau pilih Tidak tahu, dan tekanan darah yang masuk akal.</string>
+    <string name="fase_hamil">Ibu hamil</string>
+    <string name="fase_nifas">Ibu nifas</string>
+    <string name="fase_nifas_chip">NIFAS</string>
+    <string name="field_fase">Keadaan</string>
+    <string name="field_hari">Setelah melahirkan</string>
+    <string name="day_n">Hari ke-%1$d</string>
+
+    <!-- Versi Play Store (tanpa izin SMS) -->
+    <string name="play_send_note">Versi ini tidak bisa mengirim SMS sendiri. Tombol di bawah membuka aplikasi SMS HP dengan pesan yang sudah terisi. Aplikasi ini TIDAK bisa tahu apakah SMS benar-benar terkirim.</string>
+    <string name="play_handoff_title">Pastikan SMS terkirim</string>
+    <string name="play_handoff_body">Tekan Kirim di aplikasi SMS. Setelah itu telepon puskesmas untuk memastikan rujukan diterima. Status rujukan tidak bisa dipantau di aplikasi ini.</string>
+    <string name="play_no_puskesmas">Mode PUSKESMAS (menerima SMS rujukan) hanya ada di versi pilot yang dipasang dinkes.</string>
+
+    <!-- Menu -->
+    <string name="menu_capacity">Kirim kabar kapasitas faskes</string>
+    <string name="menu_rules">Aturan dan pembaruan</string>
+    <string name="cancel">Batal</string>
+
+    <!-- Kapasitas faskes lewat SMS -->
+    <string name="channel_capacity">Kabar kapasitas faskes</string>
+    <string name="notif_capacity_title">Kapasitas: %1$s</string>
+    <string name="capacity_intro">Kabari kader dan bidan desa tentang kapasitas faskes lewat SMS biasa, tanpa internet. HP mereka hanya menerima kabar dari nomor HP puskesmas ini atau dari nomor faskes yang terdaftar.</string>
+    <string name="capacity_which">Faskes</string>
+    <string name="capacity_status">Status sekarang</string>
+    <string name="capacity_beds_optional">Tempat tidur kosong (boleh dikosongkan)</string>
+    <string name="capacity_recipients">Penerima</string>
+    <string name="capacity_no_recipients">Belum ada penerima. Tambahkan nomor HP kader dan bidan desa.</string>
+    <string name="capacity_recipient_count">%1$d nomor penerima</string>
+    <string name="capacity_no_permission">Izin kirim SMS belum diberikan. SMS akan tertahan di antrian sampai izin diberikan di Pengaturan HP.</string>
+    <string name="capacity_send">Kirim ke %1$d nomor</string>
+    <string name="capacity_queued">Masuk antrian. SMS dikirim satu per satu dan dicoba ulang otomatis bila tidak ada sinyal.</string>
+    <string name="capacity_trust_note">Kabar kapasitas bukan jaminan tempat tersedia saat pasien tiba. Untuk rujukan MERAH tetap telepon dulu.</string>
+    <string name="capacity_history">Riwayat kirim</string>
+    <string name="capacity_confirm_title">Kirim SMS?</string>
+    <string name="capacity_confirm_body">Akan mengirim %1$d SMS (pulsa terpakai sesuai tarif SMS operator untuk setiap nomor).</string>
+    <string name="capacity_confirm_yes">Kirim</string>
+    <string name="capacity_beds">Tempat tidur kosong</string>
+    <string name="capacity_source">Sumber</string>
+    <string name="capacity_source_local">Diisi di HP ini</string>
+    <string name="capacity_source_sms">SMS dari %1$s</string>
+    <string name="capacity_set_at">Status per</string>
+    <string name="capacity_stale">Kabar ini sudah lebih dari 24 jam. Mungkin sudah tidak berlaku: telepon faskes dulu.</string>
+    <string name="capacity_unverified">Tanpa kode pengecekan (diketik manual).</string>
+    <string name="ago_minutes">%1$d menit lalu</string>
+    <string name="ago_hours">%1$d jam lalu</string>
+    <string name="ago_days">%1$d hari lalu</string>
+    <string name="faskes_capacity_mock_note">Belum ada kabar kapasitas lewat SMS untuk faskes ini. Angka di atas dari data contoh.</string>
+    <string name="recipients_title">Penerima kabar kapasitas</string>
+    <string name="recipients_intro">Nomor HP kader dan bidan desa yang menerima kabar kapasitas. Nomor hanya disimpan di HP ini (terenkripsi).</string>
+    <string name="recipients_add">Tambah penerima</string>
+    <string name="recipients_number">Nomor HP</string>
+    <string name="recipients_label">Nama atau keterangan</string>
+    <string name="recipients_label_hint">Misalnya: Kader Dusun A. Boleh dikosongkan.</string>
+    <string name="recipients_import">Tambahkan semua pengirim rujukan</string>
+    <string name="recipients_delete">Hapus penerima</string>
+
+    <!-- Aturan dan pembaruan -->
+    <string name="rules_intro">Aturan tanda bahaya yang dipakai HP ini. Aturan bisa diperbarui dinkes tanpa memasang ulang aplikasi, lewat server atau file.</string>
+    <string name="rules_version">Versi</string>
+    <string name="rules_seq">Nomor urut</string>
+    <string name="rules_status">Status</string>
+    <string name="rules_source">Sumber</string>
+    <string name="rules_source_apk">Bawaan aplikasi</string>
+    <string name="rules_source_update">Pembaruan (%1$s), kunci %2$s, dipasang %3$s</string>
+    <string name="rules_count">Jumlah aturan</string>
+    <string name="rules_draft_warning">Aturan ini masih DRAFT dan belum divalidasi bidan/dokter.</string>
+    <string name="rules_disabled">Pembaruan aturan belum aktif di aplikasi ini: kunci publik dinkes belum dipasang. HP memakai aturan bawaan aplikasi.</string>
+    <string name="rules_disabled_short">Pembaruan aturan belum aktif di aplikasi ini.</string>
+    <string name="rules_safety_note">Aturan baru hanya dipasang jika tanda tangan dinkes cocok, lolos uji keamanan otomatis, dan nomor urutnya lebih baru. Jika tidak, HP tetap memakai aturan yang sekarang.</string>
+    <string name="rules_server">Server dinkes</string>
+    <string name="rules_server_none">Belum diisi (lihat Pengaturan)</string>
+    <string name="rules_last_check">Terakhir diperiksa: %1$s</string>
+    <string name="rules_check_now">Periksa pembaruan sekarang</string>
+    <string name="rules_file">Dari file</string>
+    <string name="rules_file_note">Untuk daerah tanpa internet: file aturan dari dinkes bisa dikirim lewat kartu memori, Bluetooth, atau aplikasi chat. File diperiksa sama ketatnya dengan dari server.</string>
+    <string name="rules_import">Pilih file aturan</string>
+    <string name="rules_installed">Terpasang: %1$s</string>
+    <string name="rules_not_newer">Tidak ada yang baru (versi di HP sudah sama atau lebih baru).</string>
+    <string name="rules_rejected">Ditolak, aturan lama tetap dipakai: %1$s</string>
+    <string name="rules_no_server">Alamat server belum diisi.</string>
+    <string name="rules_not_published">Server belum menyediakan aturan ini.</string>
+    <string name="rules_check_failed">Gagal menghubungi server (%1$s). Dicoba lagi nanti.</string>
+    <string name="setup_server_hint_rules">Hanya untuk mengambil pembaruan aturan saat ada internet. Contoh: https://server-dinkes</string>
+
+    <!-- Kejujuran -->
+    <string name="h_nifas">Mode nifas</string>
+    <string name="h_nifas_v">BELUM DIVALIDASI. Aturan nifas juga draft dari pedoman umum dan wajib ditinjau bidan/dokter.</string>
+    <string name="h_rules_update">Pembaruan aturan</string>
+    <string name="h_rules_update_v">NYATA, bila kunci dinkes dipasang. Hanya file bertanda tangan yang lolos uji keamanan yang dipakai.</string>
+    <string name="h_capacity">Kabar kapasitas lewat SMS</string>
+    <string name="h_capacity_v">NYATA, diisi manual oleh petugas puskesmas. Bisa terlambat atau sudah berubah; telepon dulu untuk kasus MERAH.</string>
+</resources>

@@ -1,0 +1,38 @@
+<header><h1>Kebijakan Privasi BUNDA SIAGA</h1><p>DRAF: isi bagian dalam [kurung siku] sebelum dipublikasikan.</p></header>
+<main>
+<div class="warn">Draf ini disiapkan tim teknis dan belum ditinjau ahli hukum. Sesuaikan dengan UU No. 27 Tahun 2022 tentang Pelindungan Data Pribadi dan kebijakan [NAMA DINAS KESEHATAN].</div>
+
+<h2>Siapa pengendali data</h2>
+<p>[NAMA DINAS KESEHATAN / LEMBAGA], [ALAMAT], email [EMAIL KONTAK], telepon [NOMOR]. Petugas pelindungan data: [NAMA / JABATAN].</p>
+
+<h2>Untuk apa aplikasi ini</h2>
+<p>BUNDA SIAGA membantu kader posyandu, bidan desa, dan puskesmas mengenali tanda bahaya pada ibu hamil dan ibu nifas, lalu mengirim rujukan lewat SMS. Hasil aplikasi adalah sinyal prioritas rujukan, bukan diagnosis.</p>
+
+<h2>Data yang diproses</h2>
+<ul>
+<li><b>Di HP kader/bidan:</b> inisial ibu (2–3 huruf) dan nomor urut, usia kehamilan atau hari setelah melahirkan, tekanan darah bila diukur, jawaban daftar tanda bahaya, waktu pemeriksaan. Nama lengkap, alamat, dan NIK <b>tidak</b> diminta.</li>
+<li><b>Pengaturan HP:</b> peran, nama pengguna, kode lokasi, nomor HP tujuan rujukan dan nomor telepon balik.</li>
+<li><b>SMS rujukan:</b> kode pasien, tingkat prioritas, usia kehamilan atau hari nifas, tekanan darah, kode tanda bahaya, kode lokasi, jam. SMS <b>tidak terenkripsi</b>: operator seluler dan siapa pun yang memegang HP penerima dapat membacanya.</li>
+<li><b>Di HP puskesmas:</b> rujukan yang diterima beserta nomor HP pengirim, dan daftar nomor penerima kabar kapasitas.</li>
+<li><b>Di server dinas (opsional):</b> ringkasan kasus dari HP puskesmas. Nomor HP pengirim diganti kode satu arah (hash); tidak ada nama.</li>
+<li><b>SATUSEHAT (opsional):</b> bila puskesmas menautkan kasus ke pasien di SATUSEHAT, server menyimpan ID pasien SATUSEHAT dan mengirim data pemeriksaan ke Kementerian Kesehatan. NIK yang dipakai untuk mencari pasien tidak disimpan.</li>
+</ul>
+
+<h2>Izin HP yang dipakai</h2>
+<ul>
+<li><b>Kirim dan terima SMS</b> (versi pilot): untuk mengirim rujukan, menerima rujukan di puskesmas, menerima balasan, dan menerima kabar kapasitas. Aplikasi hanya membaca SMS yang diawali "BS"; SMS lain tidak dibaca, tidak disimpan, dan tidak dikirim ke mana pun. Versi Google Play tidak memakai izin SMS.</li>
+<li><b>Notifikasi, jalan saat HP menyala ulang, layanan latar depan:</b> agar rujukan terkirim ulang otomatis ketika sinyal kembali.</li>
+<li><b>Internet:</b> hanya untuk mengambil pembaruan aturan dan, di HP puskesmas, meneruskan ringkasan kasus ke server dinas.</li>
+</ul>
+
+<h2>Penyimpanan dan keamanan</h2>
+<p>Data di HP disimpan terenkripsi (SQLCipher, kunci dilindungi Android Keystore), tidak ikut cadangan otomatis, dan layar pasien tidak bisa di-screenshot. Server dinas diakses lewat HTTPS dengan token per puskesmas dan kata sandi dasbor. Data disimpan selama [MASA SIMPAN, misalnya 5 tahun sesuai ketentuan rekam medis] lalu dihapus.</p>
+
+<h2>Berbagi data</h2>
+<p>Data tidak dijual dan tidak dipakai untuk iklan. Data hanya dibagikan ke fasilitas kesehatan tujuan rujukan, [NAMA DINAS KESEHATAN], dan Kementerian Kesehatan melalui SATUSEHAT bila diaktifkan.</p>
+
+<h2>Hak Anda</h2>
+<p>Ibu yang diperiksa (atau keluarganya) dapat meminta informasi, perbaikan, atau penghapusan data melalui kader, bidan, puskesmas, atau kontak di atas. Dasar pemrosesan: [DASAR HUKUM, misalnya pelaksanaan tugas pelayanan kesehatan / persetujuan].</p>
+
+<p class="muted">Versi draf: 2026-09-30. Terakhir diperbarui: [TANGGAL].</p>
+</main>

@@ -1,0 +1,24 @@
+*.iml
+.gradle
+.idea/
+.kotlin/
+.DS_Store
+local.properties
+**/build/
+/captures
+.externalNativeBuild
+.cxx
+# Signing credentials and secrets
+*.jks
+*.keystore
+*.p12
+*.pem
+.env
+.env.*
+!.env.example
+# Server runtime data (contains patient pseudonyms)
+server/data/
+# Release signing (see docs/PLAY_STORE.md)
+keystore.properties
+# Rules signing private keys (see docs/RULES_UPDATE.md)
+rules-keys/

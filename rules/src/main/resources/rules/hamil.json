@@ -1,0 +1,172 @@
+{
+  "version": "hamil-0.1.0-draft",
+  "seq": 1,
+  "engine": 2,
+  "status": "DRAFT_NEEDS_CLINICAL_REVIEW",
+  "fase": "HAMIL",
+  "disclaimer": "Hasil ini adalah sinyal prioritas rujukan, bukan diagnosis. Keputusan akhir ada pada bidan atau tenaga kesehatan.",
+  "bpBounds": { "sysMin": 60, "sysMax": 260, "diaMin": 30, "diaMax": 160 },
+
+  "questions": [
+    { "code": "KEJ", "label": "Kejang", "prompt": "Apakah ibu kejang?", "hint": "Badan kaku atau kelojotan, hari ini atau sejak kemarin.", "icon": "bolt", "critical": true },
+    { "code": "KSD", "label": "Pingsan / tidak sadar", "prompt": "Apakah ibu pingsan atau tidak sadar?", "hint": "Tidak menjawab saat dipanggil atau pernah pingsan hari ini.", "icon": "bed", "critical": true },
+    { "code": "PDR", "label": "Perdarahan dari jalan lahir", "prompt": "Apakah keluar darah dari jalan lahir?", "hint": "Bercak, sedikit, atau banyak.", "icon": "water_drop", "critical": true, "bleedingAmount": true },
+    { "code": "SKH", "label": "Sakit kepala hebat", "prompt": "Apakah ibu sakit kepala hebat?", "hint": "Sangat sakit, tidak seperti biasanya.", "icon": "head", "critical": true },
+    { "code": "PDG", "label": "Pandangan kabur", "prompt": "Apakah pandangan ibu kabur?", "hint": "Berkunang-kunang atau tidak jelas melihat.", "icon": "eye", "critical": true },
+    { "code": "SSK", "label": "Sesak napas berat / nyeri dada", "prompt": "Apakah ibu sesak napas berat atau nyeri dada?", "hint": "Sulit bernapas walau sedang istirahat.", "icon": "lungs", "critical": true },
+    { "code": "NPT", "label": "Nyeri perut hebat", "prompt": "Apakah ibu nyeri perut hebat?", "hint": "Sakit perut yang sangat kuat atau terus-menerus.", "icon": "belly", "critical": true },
+    { "code": "KTB", "label": "Air ketuban keluar sebelum waktunya", "prompt": "Apakah air ketuban keluar sebelum waktunya?", "hint": "Cairan bening merembes atau mengalir dari jalan lahir.", "icon": "water", "critical": true },
+    { "code": "GJN", "label": "Gerakan janin", "prompt": "Bagaimana gerakan janin hari ini?", "hint": "Tanyakan ke ibu: apakah bayi bergerak seperti biasa?", "icon": "baby", "critical": false, "criticalFromWeek": 20, "askFromWeek": 20 },
+    { "code": "BKK", "label": "Bengkak wajah / tangan", "prompt": "Apakah wajah atau tangan ibu bengkak?", "hint": "Cincin terasa sesak, kelopak mata bengkak.", "icon": "hand", "critical": false },
+    { "code": "NPU", "label": "Nyeri ulu hati", "prompt": "Apakah ibu nyeri ulu hati?", "hint": "Nyeri di perut bagian atas, di bawah dada.", "icon": "stomach", "critical": false },
+    { "code": "DMM", "label": "Demam", "prompt": "Apakah ibu demam?", "hint": "Badan terasa panas.", "icon": "thermometer", "critical": false },
+    { "code": "MGL", "label": "Menggigil", "prompt": "Apakah ibu menggigil?", "hint": "Badan gemetar kedinginan.", "icon": "ac_unit", "critical": false },
+    { "code": "CRB", "label": "Cairan berbau dari jalan lahir", "prompt": "Apakah keluar cairan berbau dari jalan lahir?", "hint": "Cairan berbau tidak sedap.", "icon": "sick", "critical": false },
+    { "code": "MNT", "label": "Muntah terus-menerus", "prompt": "Apakah ibu muntah terus dan tidak bisa makan atau minum?", "hint": "Semua makanan dan minuman keluar lagi.", "icon": "no_food", "critical": false }
+  ],
+
+  "rules": [
+    { "id": "R-M01", "level": "MERAH", "when": { "yes": "KEJ" },
+      "reason": "Ibu kejang. Kejang saat hamil adalah tanda bahaya.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes; WHO danger signs", "verified": false },
+
+    { "id": "R-M02", "level": "MERAH", "when": { "yes": "KSD" },
+      "reason": "Ibu pingsan atau tidak sadar.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes; WHO danger signs", "verified": false },
+
+    { "id": "R-M03", "level": "MERAH",
+      "when": { "all": [ { "yes": "PDR" }, { "any": [ { "gaAtLeast": 20, "orUnknown": true }, { "bleeding": "BANYAK" } ] } ] },
+      "reason": "Keluar darah dari jalan lahir (usia kehamilan {uk} minggu atau perdarahan banyak).",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes; WHO danger signs", "verified": false,
+      "note": "Batas 20 minggu dan kategori jumlah darah perlu ditinjau." },
+
+    { "id": "R-M04", "level": "MERAH", "when": { "bpAtLeast": [160, 110] },
+      "reason": "Tekanan darah sangat tinggi: {sis}/{dia} (batas 160/110).",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Rentang hipertensi berat pada kehamilan (pedoman umum)", "verified": false },
+
+    { "id": "R-M05", "level": "MERAH",
+      "when": { "all": [ { "yes": "SKH" }, { "any": [ { "yes": "PDG" }, { "yes": "NPU" } ] } ] },
+      "reason": "Sakit kepala hebat disertai pandangan kabur atau nyeri ulu hati.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Tanda bahaya preeklamsia (pedoman umum)", "verified": false },
+
+    { "id": "R-M06", "level": "MERAH",
+      "when": { "all": [ { "any": [ { "yes": "SKH" }, { "yes": "PDG" } ] }, { "gaAtLeast": 20, "orUnknown": true }, { "notBpBelow": [140, 90] } ] },
+      "reason": "Sakit kepala hebat atau pandangan kabur pada usia kehamilan {uk} minggu, dan tekanan darah tidak terbukti normal.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Tanda bahaya preeklamsia (pedoman umum)", "verified": false,
+      "note": "Aturan ini sengaja MERAH tanpa tekanan darah agar kader tanpa alat tensi tetap bisa merujuk." },
+
+    { "id": "R-M06K", "level": "KUNING",
+      "when": { "all": [ { "any": [ { "yes": "SKH" }, { "yes": "PDG" } ] }, { "gaAtLeast": 20, "orUnknown": true }, { "bpBelow": [140, 90] } ] },
+      "reason": "Sakit kepala hebat atau pandangan kabur, tetapi tekanan darah terukur normal ({sis}/{dia}). Turun ke KUNING, tetap perlu dinilai bidan.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Pengecualian R-M06 dari spesifikasi", "verified": false },
+
+    { "id": "R-M07", "level": "MERAH",
+      "when": { "all": [ { "bpAtLeast": [140, 90] }, { "any": [ { "yes": "BKK" }, { "yes": "SKH" } ] } ] },
+      "reason": "Tekanan darah tinggi ({sis}/{dia}) disertai bengkak atau sakit kepala hebat.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Tanda bahaya preeklamsia (pedoman umum)", "verified": false },
+
+    { "id": "R-M08", "level": "MERAH", "when": { "yes": "SSK" },
+      "reason": "Sesak napas berat atau nyeri dada.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "WHO danger signs", "verified": false },
+
+    { "id": "R-M09", "level": "MERAH", "when": { "yes": "NPT" },
+      "reason": "Nyeri perut hebat.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes; WHO danger signs", "verified": false },
+
+    { "id": "R-M10", "level": "MERAH", "when": { "yes": "KTB" },
+      "reason": "Air ketuban keluar sebelum waktunya.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes", "verified": false,
+      "note": "Belum membedakan usia kehamilan (cukup bulan atau belum)." },
+
+    { "id": "R-M11", "level": "MERAH",
+      "when": { "all": [ { "fetal": "TIDAK_ADA" }, { "gaAtLeast": 28, "orUnknown": false } ] },
+      "reason": "Gerakan janin tidak ada pada usia kehamilan {uk} minggu.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes", "verified": false,
+      "note": "Ambang 28 minggu dan cara menilai gerakan janin perlu ditinjau." },
+
+    { "id": "R-M12", "level": "MERAH",
+      "when": { "all": [ { "yes": "DMM" }, { "any": [ { "yes": "NPT" }, { "yes": "CRB" }, { "yes": "KSD" }, { "yes": "MGL" } ] } ] },
+      "reason": "Demam disertai nyeri perut hebat, cairan berbau, menggigil, atau tidak sadar.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Tanda infeksi berat (pedoman umum)", "verified": false },
+
+    { "id": "R-K01", "level": "KUNING",
+      "when": { "all": [ { "bpAtLeast": [140, 90] }, { "gaAtLeast": 20, "orUnknown": true } ] },
+      "reason": "Tekanan darah tinggi: {sis}/{dia} (batas 140/90).",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Ambang hipertensi pada kehamilan (pedoman umum)", "verified": false,
+      "note": "Usia kehamilan tidak diketahui diperlakukan seperti >= 20 minggu (condong aman)." },
+
+    { "id": "R-K02", "level": "KUNING",
+      "when": { "all": [ { "yes": "BKK" }, { "gaAtLeast": 20, "orUnknown": true } ] },
+      "reason": "Wajah atau tangan bengkak.",
+      "suggestions": [ "Minta bidan mengukur tekanan darah ibu hari ini." ],
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes", "verified": false },
+
+    { "id": "R-K03", "level": "KUNING", "when": { "fetal": "BERKURANG" },
+      "reason": "Gerakan janin berkurang.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes", "verified": false },
+
+    { "id": "R-K04", "level": "KUNING", "when": { "yes": "DMM" },
+      "reason": "Ibu demam.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes", "verified": false },
+
+    { "id": "R-K05", "level": "KUNING", "when": { "yes": "MNT" },
+      "reason": "Muntah terus-menerus, tidak bisa makan atau minum.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes", "verified": false },
+
+    { "id": "R-K06", "level": "KUNING",
+      "when": { "all": [ { "bleeding": "BERCAK" }, { "gaBelow": 20 } ] },
+      "reason": "Bercak darah pada usia kehamilan {uk} minggu.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Spesifikasi awal", "verified": false },
+
+    { "id": "R-K07", "level": "KUNING",
+      "when": { "all": [ { "bpAtLeast": [140, 90] }, { "gaBelow": 20 } ] },
+      "reason": "Tekanan darah tinggi ({sis}/{dia}) pada usia kehamilan {uk} minggu. Perlu dinilai bidan.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Tambahan tim teknis", "verified": false,
+      "note": "Ditambahkan tim teknis (bukan dari spesifikasi): tekanan darah tinggi tidak boleh menghasilkan HIJAU." }
+  ],
+
+  "incomplete": {
+    "id": "R-U01", "level": "KUNING",
+    "reason": "Data belum lengkap. Belum diperiksa: {list}. Hasil HIJAU tidak bisa diberikan sebelum semua pertanyaan penting dijawab.",
+    "status": "DRAFT_NEEDS_CLINICAL_REVIEW"
+  },
+  "unmatchedSign": {
+    "id": "R-U02", "level": "KUNING",
+    "reason": "Ada tanda yang dijawab YA ({tanda}). Tanda ini tidak masuk aturan lain, tetapi tetap perlu dinilai bidan.",
+    "status": "DRAFT_NEEDS_CLINICAL_REVIEW",
+    "note": "Jaring pengaman tambahan dari tim teknis (bukan dari spesifikasi klinis): jawaban YA tidak pernah menghasilkan HIJAU."
+  },
+
+  "advice": {
+    "MERAH": [
+      "Segera rujuk ke fasilitas kesehatan. Hubungi bidan atau puskesmas sekarang.",
+      "Jangan menunggu jadwal posyandu berikutnya."
+    ],
+    "KUNING": [
+      "Minta ibu diperiksa bidan atau puskesmas secepatnya, paling lambat dalam 24 jam.",
+      "Jika muncul tanda bahaya baru, periksa ulang atau langsung hubungi bidan."
+    ],
+    "HIJAU": [
+      "Tidak ditemukan tanda bahaya dari pertanyaan ini. Lanjutkan pemeriksaan kehamilan sesuai jadwal.",
+      "Kembali atau hubungi bidan jika muncul tanda bahaya."
+    ]
+  },
+  "bpMissingAdvice": {
+    "TIDAK_ADA_ALAT": "Tidak ada alat tensi: minta bidan mengukur tekanan darah ibu.",
+    "BELUM_DIPERIKSA": "Tekanan darah belum diukur: minta bidan mengukur jika memungkinkan."
+  },
+
+  "stabilization": {
+    "title": "Sambil menunggu dan selama perjalanan",
+    "steps": [
+      "Jangan tinggalkan ibu sendirian.",
+      "Baringkan ibu miring ke kiri.",
+      "Jika ibu kejang: jauhkan benda keras atau tajam, lindungi kepalanya, dan jangan masukkan apa pun ke mulut ibu.",
+      "Selimuti ibu agar tetap hangat.",
+      "Catat jam mulai kejadian (misalnya jam mulai kejang atau perdarahan).",
+      "Siapkan Buku KIA, KTP atau identitas, kartu BPJS/KIS, pendamping keluarga, dan kendaraan."
+    ],
+    "bidanReminder": "Untuk bidan: lakukan penanganan sesuai protokol yang berlaku di fasilitas Anda.",
+    "status": "needs_review"
+  }
+}

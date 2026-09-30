@@ -1,0 +1,16 @@
+{
+  "status": "UNVERIFIED_NEEDS_TERMINOLOGY_REVIEW",
+  "note": "Pemetaan kode untuk SATUSEHAT. Semua entri verified=false sampai dicocokkan dengan Panduan Interoperabilitas SATUSEHAT (modul ANC/nifas) dan diuji di sandbox. Ganti lewat BS_SS_TERMINOLOGY tanpa mengubah kode.",
+  "encounterClass": { "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode", "code": "AMB", "display": "ambulatory", "verified": false,
+    "note": "Pemeriksaan dilakukan kader di desa, bukan kunjungan di puskesmas. Perlu diputuskan: AMB, HH (home health), atau tidak dikirim sebagai Encounter." },
+  "bpSystolic": { "system": "http://loinc.org", "code": "8480-6", "display": "Systolic blood pressure", "verified": false },
+  "bpDiastolic": { "system": "http://loinc.org", "code": "8462-4", "display": "Diastolic blood pressure", "verified": false },
+  "gestationalAge": { "system": "http://loinc.org", "code": "49051-6", "display": "Gestational age in weeks", "verified": false },
+  "daysPostpartum": { "system": "https://bundasiaga.id/fhir/CodeSystem/data", "code": "hari-nifas", "display": "Hari setelah melahirkan", "verified": false,
+    "note": "Kode lokal; belum ada padanan yang dipastikan." },
+  "dangerSignSystem": "https://bundasiaga.id/fhir/CodeSystem/tanda-bahaya",
+  "dangerSignExtraCodings": {},
+  "dangerSignCategory": { "system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "exam", "display": "Exam", "verified": false },
+  "referralCategory": { "system": "http://snomed.info/sct", "code": "3457005", "display": "Patient referral", "verified": false },
+  "priority": { "MERAH": "stat", "KUNING": "urgent", "HIJAU": "routine" }
+}

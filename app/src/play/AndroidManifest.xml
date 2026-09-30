@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Build Google Play: tanpa izin SMS (Play hanya mengizinkannya untuk aplikasi SMS bawaan
+     atau pengecualian yang disetujui), jadi tidak ada yang mengirim, menerima, atau mencoba
+     ulang SMS di latar belakang. Rujukan diserahkan ke aplikasi SMS di HP. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Dihapus, sehingga pemeriksaan perangkat keras ChromeOS tidak berlaku. -->
+    <uses-permission android:name="android.permission.SEND_SMS" tools:node="remove"
+        tools:ignore="PermissionImpliesUnsupportedChromeOsHardware" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" tools:node="remove"
+        tools:ignore="PermissionImpliesUnsupportedChromeOsHardware" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" tools:node="remove" />
+
+    <application>
+        <receiver android:name=".sms.SmsReceiver" tools:node="remove" />
+        <receiver android:name=".work.BootReceiver" tools:node="remove" />
+        <service android:name=".work.OutboxService" tools:node="remove" />
+    </application>
+</manifest>

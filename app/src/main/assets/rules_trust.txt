@@ -1,0 +1,8 @@
+# Kunci publik yang dipercaya aplikasi untuk pembaruan aturan (hamil/nifas).
+# Format per baris:  <keyId> <kunci-publik-base64>
+#
+# Kosong = pembaruan aturan dari server/file DIMATIKAN; aplikasi hanya memakai
+# aturan bawaan APK. Cara membuat kunci dan mengisinya: docs/RULES_UPDATE.md
+#
+# Kunci ini BUKAN rahasia (kunci publik). Kunci privat pasangannya tidak boleh
+# masuk ke repositori atau ke server.

@@ -1,0 +1,166 @@
+{
+  "version": "nifas-0.1.0-draft",
+  "seq": 1,
+  "engine": 2,
+  "status": "DRAFT_NEEDS_CLINICAL_REVIEW",
+  "fase": "NIFAS",
+  "disclaimer": "Hasil ini adalah sinyal prioritas rujukan, bukan diagnosis. Keputusan akhir ada pada bidan atau tenaga kesehatan.",
+  "bpBounds": { "sysMin": 60, "sysMax": 260, "diaMin": 30, "diaMax": 160 },
+
+  "questions": [
+    { "code": "KEJ", "label": "Kejang", "prompt": "Apakah ibu kejang?", "hint": "Badan kaku atau kelojotan, hari ini atau sejak kemarin.", "icon": "bolt", "critical": true },
+    { "code": "KSD", "label": "Pingsan / tidak sadar", "prompt": "Apakah ibu pingsan atau tidak sadar?", "hint": "Tidak menjawab saat dipanggil atau pernah pingsan hari ini.", "icon": "bed", "critical": true },
+    { "code": "PDR", "label": "Perdarahan banyak dari jalan lahir", "prompt": "Apakah darah dari jalan lahir keluar banyak?", "hint": "Lebih banyak dari biasanya: pembalut cepat penuh atau keluar gumpalan darah besar.", "icon": "water_drop", "critical": true },
+    { "code": "SKH", "label": "Sakit kepala hebat", "prompt": "Apakah ibu sakit kepala hebat?", "hint": "Sangat sakit, tidak seperti biasanya.", "icon": "head", "critical": true },
+    { "code": "PDG", "label": "Pandangan kabur", "prompt": "Apakah pandangan ibu kabur?", "hint": "Berkunang-kunang atau tidak jelas melihat.", "icon": "eye", "critical": true },
+    { "code": "SSK", "label": "Sesak napas berat / nyeri dada", "prompt": "Apakah ibu sesak napas berat atau nyeri dada?", "hint": "Sulit bernapas walau sedang istirahat.", "icon": "lungs", "critical": true },
+    { "code": "NPT", "label": "Nyeri perut hebat", "prompt": "Apakah ibu nyeri perut hebat?", "hint": "Sakit perut yang sangat kuat atau terus-menerus.", "icon": "belly", "critical": true },
+    { "code": "DMM", "label": "Demam", "prompt": "Apakah ibu demam?", "hint": "Badan terasa panas.", "icon": "thermometer", "critical": true },
+    { "code": "MGL", "label": "Menggigil", "prompt": "Apakah ibu menggigil?", "hint": "Badan gemetar kedinginan.", "icon": "ac_unit", "critical": false },
+    { "code": "CRB", "label": "Cairan berbau dari jalan lahir", "prompt": "Apakah keluar cairan berbau dari jalan lahir?", "hint": "Cairan atau darah nifas berbau tidak sedap.", "icon": "sick", "critical": false },
+    { "code": "BKK", "label": "Bengkak wajah / tangan", "prompt": "Apakah wajah atau tangan ibu bengkak?", "hint": "Cincin terasa sesak, kelopak mata bengkak.", "icon": "hand", "critical": false },
+    { "code": "NPU", "label": "Nyeri ulu hati", "prompt": "Apakah ibu nyeri ulu hati?", "hint": "Nyeri di perut bagian atas, di bawah dada.", "icon": "stomach", "critical": false },
+    { "code": "PYD", "label": "Payudara bengkak, merah, dan nyeri", "prompt": "Apakah payudara ibu bengkak, merah, dan terasa sakit?", "hint": "Bisa di satu atau dua payudara.", "icon": "breast", "critical": false },
+    { "code": "BTS", "label": "Nyeri atau bengkak di satu betis", "prompt": "Apakah satu betis atau kaki ibu nyeri, bengkak, atau kemerahan?", "hint": "Biasanya hanya satu sisi, terasa sakit saat berjalan.", "icon": "leg", "critical": false },
+    { "code": "SDH", "label": "Sangat sedih atau murung", "prompt": "Apakah ibu terlihat sangat sedih, murung, atau sering menangis?", "hint": "Tidak mau merawat diri atau bayinya, tidak bisa tidur walau ada kesempatan.", "icon": "mood", "critical": false },
+    { "code": "PMD", "label": "Berpikir menyakiti diri atau bayi", "prompt": "Apakah ibu pernah berpikir ingin menyakiti diri sendiri atau bayinya?", "hint": "Tanyakan dengan tenang dan tanpa menghakimi.", "icon": "warning", "critical": false }
+  ],
+
+  "rules": [
+    { "id": "N-M01", "level": "MERAH", "when": { "yes": "KEJ" },
+      "reason": "Ibu kejang setelah melahirkan.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes (tanda bahaya nifas); WHO postnatal danger signs", "verified": false },
+
+    { "id": "N-M02", "level": "MERAH", "when": { "yes": "KSD" },
+      "reason": "Ibu pingsan atau tidak sadar.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "WHO postnatal danger signs", "verified": false },
+
+    { "id": "N-M03", "level": "MERAH", "when": { "yes": "PDR" },
+      "reason": "Darah dari jalan lahir keluar banyak (hari ke-{hari} setelah melahirkan).",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes (tanda bahaya nifas); WHO postnatal danger signs", "verified": false,
+      "note": "Pertanyaan sengaja menanyakan perdarahan BANYAK, karena darah nifas biasa itu normal. Batas 'banyak' perlu ditinjau." },
+
+    { "id": "N-M04", "level": "MERAH", "when": { "bpAtLeast": [160, 110] },
+      "reason": "Tekanan darah sangat tinggi: {sis}/{dia} (batas 160/110).",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Rentang hipertensi berat (pedoman umum), berlaku juga pada masa nifas", "verified": false },
+
+    { "id": "N-M05", "level": "MERAH",
+      "when": { "all": [ { "yes": "SKH" }, { "any": [ { "yes": "PDG" }, { "yes": "NPU" } ] } ] },
+      "reason": "Sakit kepala hebat disertai pandangan kabur atau nyeri ulu hati.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Tanda bahaya preeklamsia pascapersalinan (pedoman umum)", "verified": false },
+
+    { "id": "N-M06", "level": "MERAH",
+      "when": { "all": [ { "any": [ { "yes": "SKH" }, { "yes": "PDG" } ] }, { "notBpBelow": [140, 90] } ] },
+      "reason": "Sakit kepala hebat atau pandangan kabur, dan tekanan darah tidak terbukti normal.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Tanda bahaya preeklamsia pascapersalinan (pedoman umum)", "verified": false,
+      "note": "Sama seperti R-M06 pada kehamilan: sengaja MERAH tanpa tekanan darah agar kader tanpa alat tensi tetap bisa merujuk." },
+
+    { "id": "N-M06K", "level": "KUNING",
+      "when": { "all": [ { "any": [ { "yes": "SKH" }, { "yes": "PDG" } ] }, { "bpBelow": [140, 90] } ] },
+      "reason": "Sakit kepala hebat atau pandangan kabur, tetapi tekanan darah terukur normal ({sis}/{dia}). Turun ke KUNING, tetap perlu dinilai bidan.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Pengecualian N-M06 (mengikuti R-M06K)", "verified": false },
+
+    { "id": "N-M07", "level": "MERAH",
+      "when": { "all": [ { "bpAtLeast": [140, 90] }, { "any": [ { "yes": "BKK" }, { "yes": "SKH" } ] } ] },
+      "reason": "Tekanan darah tinggi ({sis}/{dia}) disertai bengkak atau sakit kepala hebat.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Tanda bahaya preeklamsia pascapersalinan (pedoman umum)", "verified": false },
+
+    { "id": "N-M08", "level": "MERAH", "when": { "yes": "SSK" },
+      "reason": "Sesak napas berat atau nyeri dada.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "WHO postnatal danger signs", "verified": false },
+
+    { "id": "N-M09", "level": "MERAH", "when": { "yes": "NPT" },
+      "reason": "Nyeri perut hebat.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "WHO postnatal danger signs", "verified": false },
+
+    { "id": "N-M10", "level": "MERAH",
+      "when": { "all": [ { "yes": "DMM" }, { "any": [ { "yes": "NPT" }, { "yes": "CRB" }, { "yes": "KSD" }, { "yes": "MGL" } ] } ] },
+      "reason": "Demam disertai nyeri perut hebat, cairan berbau, menggigil, atau tidak sadar.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Tanda infeksi berat masa nifas (pedoman umum)", "verified": false },
+
+    { "id": "N-M11", "level": "MERAH", "when": { "yes": "PMD" },
+      "reason": "Ibu pernah berpikir menyakiti diri sendiri atau bayinya.",
+      "suggestions": [ "Jangan tinggalkan ibu dan bayi tanpa pendamping sampai bidan menilai." ],
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Tanda bahaya kesehatan jiwa pascapersalinan (pedoman umum)", "verified": false,
+      "note": "Level MERAH dan cara bertanya perlu ditinjau bidan dan tenaga kesehatan jiwa." },
+
+    { "id": "N-K01", "level": "KUNING", "when": { "bpAtLeast": [140, 90] },
+      "reason": "Tekanan darah tinggi: {sis}/{dia} (batas 140/90).",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Ambang hipertensi (pedoman umum)", "verified": false },
+
+    { "id": "N-K02", "level": "KUNING", "when": { "yes": "BKK" },
+      "reason": "Wajah atau tangan bengkak.",
+      "suggestions": [ "Minta bidan mengukur tekanan darah ibu hari ini." ],
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes (tanda bahaya nifas)", "verified": false },
+
+    { "id": "N-K03", "level": "KUNING", "when": { "yes": "DMM" },
+      "reason": "Ibu demam setelah melahirkan.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes (tanda bahaya nifas)", "verified": false,
+      "note": "Buku KIA menyebut demam lebih dari 2 hari; di sini demam apa pun sudah KUNING (condong aman). Perlu ditinjau." },
+
+    { "id": "N-K04", "level": "KUNING", "when": { "yes": "CRB" },
+      "reason": "Keluar cairan berbau dari jalan lahir.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes (tanda bahaya nifas)", "verified": false },
+
+    { "id": "N-K05", "level": "KUNING", "when": { "yes": "PYD" },
+      "reason": "Payudara bengkak, merah, dan nyeri.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes (tanda bahaya nifas)", "verified": false },
+
+    { "id": "N-K06", "level": "KUNING", "when": { "yes": "BTS" },
+      "reason": "Nyeri atau bengkak di satu betis atau kaki.",
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "WHO postnatal danger signs", "verified": false,
+      "note": "Perlu ditinjau: apakah seharusnya MERAH." },
+
+    { "id": "N-K07", "level": "KUNING", "when": { "yes": "SDH" },
+      "reason": "Ibu terlihat sangat sedih atau murung.",
+      "suggestions": [ "Ajak keluarga mendampingi ibu dan membantu merawat bayi." ],
+      "status": "DRAFT_NEEDS_CLINICAL_REVIEW", "sourceHint": "Buku KIA Kemenkes (tanda bahaya nifas)", "verified": false }
+  ],
+
+  "incomplete": {
+    "id": "N-U01", "level": "KUNING",
+    "reason": "Data belum lengkap. Belum diperiksa: {list}. Hasil HIJAU tidak bisa diberikan sebelum semua pertanyaan penting dijawab.",
+    "status": "DRAFT_NEEDS_CLINICAL_REVIEW"
+  },
+  "unmatchedSign": {
+    "id": "N-U02", "level": "KUNING",
+    "reason": "Ada tanda yang dijawab YA ({tanda}). Tanda ini tidak masuk aturan lain, tetapi tetap perlu dinilai bidan.",
+    "status": "DRAFT_NEEDS_CLINICAL_REVIEW",
+    "note": "Jaring pengaman tambahan dari tim teknis: jawaban YA tidak pernah menghasilkan HIJAU."
+  },
+
+  "advice": {
+    "MERAH": [
+      "Segera rujuk ke fasilitas kesehatan. Hubungi bidan atau puskesmas sekarang.",
+      "Jangan menunggu jadwal kunjungan nifas berikutnya."
+    ],
+    "KUNING": [
+      "Minta ibu diperiksa bidan atau puskesmas secepatnya, paling lambat dalam 24 jam.",
+      "Jika muncul tanda bahaya baru, periksa ulang atau langsung hubungi bidan."
+    ],
+    "HIJAU": [
+      "Tidak ditemukan tanda bahaya dari pertanyaan ini. Lanjutkan kunjungan nifas sesuai jadwal.",
+      "Kembali atau hubungi bidan jika muncul tanda bahaya."
+    ]
+  },
+  "bpMissingAdvice": {
+    "TIDAK_ADA_ALAT": "Tidak ada alat tensi: minta bidan mengukur tekanan darah ibu.",
+    "BELUM_DIPERIKSA": "Tekanan darah belum diukur: minta bidan mengukur jika memungkinkan."
+  },
+
+  "stabilization": {
+    "title": "Sambil menunggu dan selama perjalanan",
+    "steps": [
+      "Jangan tinggalkan ibu sendirian.",
+      "Jika ibu tidak sadar, baringkan miring agar napasnya tidak tersumbat.",
+      "Jika ibu kejang: jauhkan benda keras atau tajam, lindungi kepalanya, dan jangan masukkan apa pun ke mulut ibu.",
+      "Jika ibu berpikir menyakiti diri atau bayinya: tetap dampingi, bicara dengan tenang, dan jauhkan benda berbahaya.",
+      "Selimuti ibu agar tetap hangat.",
+      "Catat jam mulai kejadian (misalnya jam mulai kejang atau perdarahan).",
+      "Bawa bayi bersama ibu jika memungkinkan, dengan satu anggota keluarga yang menjaga bayi.",
+      "Siapkan Buku KIA, KTP atau identitas, kartu BPJS/KIS, pendamping keluarga, dan kendaraan."
+    ],
+    "bidanReminder": "Untuk bidan: lakukan penanganan sesuai protokol yang berlaku di fasilitas Anda.",
+    "status": "needs_review"
+  }
+}
