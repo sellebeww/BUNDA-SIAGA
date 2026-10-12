@@ -1,6 +1,7 @@
 package id.bundasiaga.app.ui
 
 import android.Manifest
+import android.widget.Toast
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -134,14 +135,14 @@ fun hasSmsPermission(context: Context) =
 
 fun dial(context: Context, number: String) {
     runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + number.filter { it.isDigit() || it == '+' }))) }
+        .onFailure { Toast.makeText(context, R.string.external_app_missing, Toast.LENGTH_LONG).show() }
 }
 
 /** Cadangan bila SEND_SMS tidak diizinkan: serahkan teks ke aplikasi SMS HP. Status tidak bisa dilacak. */
-fun openSmsApp(context: Context, number: String, body: String) {
+fun openSmsApp(context: Context, number: String, body: String): Boolean =
     runCatching {
         context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + number)).putExtra("sms_body", body))
-    }
-}
+    }.onFailure { Toast.makeText(context, R.string.external_app_missing, Toast.LENGTH_LONG).show() }.isSuccess
 
 @Composable
 fun ConfirmScreen(vm: AppViewModel, outboxId: Long) {
@@ -185,8 +186,7 @@ fun ConfirmScreen(vm: AppViewModel, outboxId: Long) {
                     stringResource(R.string.perm_use_sms_app), icon = Icons.Filled.Sms, color = MerahBg,
                     onClick = {
                         vm.app.metric("sms_app_handoff", outboxId)
-                        openSmsApp(context, destination, msg.body)
-                        handedOff = true
+                        handedOff = openSmsApp(context, destination, msg.body)
                     },
                 )
                 if (handedOff) {
@@ -197,7 +197,7 @@ fun ConfirmScreen(vm: AppViewModel, outboxId: Long) {
                 }
             } else {
                 BigButton(
-                    stringResource(R.string.confirm_send), icon = Icons.AutoMirrored.Filled.Send, color = MerahBg,
+                    stringResource(R.string.confirm_send), enabled = !vm.actionBusy, icon = Icons.AutoMirrored.Filled.Send, color = MerahBg,
                     onClick = {
                         if (hasSmsPermission(context)) vm.sendQueued(outboxId, context)
                         else launcher.launch(Manifest.permission.SEND_SMS)
@@ -214,7 +214,7 @@ fun ConfirmScreen(vm: AppViewModel, outboxId: Long) {
                     })
                     SecondaryButton(stringResource(R.string.perm_use_sms_app), onClick = {
                         vm.app.metric("sms_app_fallback", outboxId)
-                        openSmsApp(context, msg.destination, msg.body)
+                        openSmsApp(context, destination, msg.body)
                     }, icon = Icons.Filled.Sms)
                     Text(stringResource(R.string.perm_sms_app_note), style = MaterialTheme.typography.bodySmall)
                 }
@@ -245,6 +245,10 @@ fun StatusScreen(vm: AppViewModel, outboxId: Long) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             r?.let { Text(stringResource(R.string.status_for, it.pasien, Codebook.levelWord(it.tingkat)), style = MaterialTheme.typography.titleMedium) }
 
+            if (!BuildConfig.SMS_DIRECT) Disclaimer(stringResource(R.string.play_send_note))
+            if (msg.state == OutState.DRAFT) {
+                BigButton(stringResource(R.string.result_send), onClick = { vm.go(Screen.Confirm(outboxId)) }, icon = Icons.AutoMirrored.Filled.Send)
+            }
             SectionCard(stringResource(R.string.status_now)) {
                 Text(stateLabel(msg.state, msg.ackStatus), style = MaterialTheme.typography.headlineSmall)
                 when (msg.state) {
@@ -278,7 +282,7 @@ fun StatusScreen(vm: AppViewModel, outboxId: Long) {
                     Text(stringResource(R.string.status_escalate_body), style = MaterialTheme.typography.bodyLarge)
                 }
             }
-            if (msg.state == OutState.FAILED_RETRYING || msg.state == OutState.EXPIRED) {
+            if (BuildConfig.SMS_DIRECT && (msg.state == OutState.FAILED_RETRYING || msg.state == OutState.EXPIRED)) {
                 BigButton(stringResource(R.string.status_retry_now), onClick = { vm.retryNow(outboxId, context) }, icon = Icons.Filled.Refresh)
             }
             BigButton(

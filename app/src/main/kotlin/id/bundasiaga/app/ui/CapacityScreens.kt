@@ -42,7 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
 import id.bundasiaga.app.R
 import id.bundasiaga.app.data.CapacityEntity
 import id.bundasiaga.app.data.ReferralMapper
@@ -89,10 +89,10 @@ fun agoText(ms: Long): String = when {
 @Composable
 fun CapacitySendScreen(vm: AppViewModel) {
     val context = LocalContext.current
-    val data = vm.app.faskes
+    val facilities by vm.app.db.facilities().observeAll().collectAsState(initial = emptyList())
     val recipients by vm.app.db.recipients().observeAll().collectAsState(initial = emptyList())
     val history by vm.app.db.outbox().observeCapacityBroadcasts().collectAsState(initial = emptyList())
-    var faskesId by rememberSaveable { mutableStateOf(data?.faskes?.firstOrNull()?.id ?: "") }
+    var faskesId by rememberSaveable { mutableStateOf("") }
     var status by rememberSaveable { mutableStateOf<StatusKapasitas?>(null) }
     var beds by rememberSaveable { mutableStateOf("") }
     var confirm by remember { mutableStateOf(false) }
@@ -103,37 +103,35 @@ fun CapacitySendScreen(vm: AppViewModel) {
     val preview = status?.let { st ->
         runCatching { Encoder.encode(Kapasitas(faskesId, st, bedsInt, ReferralMapper.waktu(System.currentTimeMillis()))) }.getOrNull()
     }
-    val canSend = preview != null && bedsOk && recipients.isNotEmpty()
+    val canSend = facilities.any { it.id == faskesId } && preview != null && bedsOk && recipients.isNotEmpty() && !vm.capacityBusy
 
     Column(Modifier.fillMaxSize()) {
         BundaTopBar(stringResource(R.string.menu_capacity), onBack = { vm.back() })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.capacity_intro), style = MaterialTheme.typography.bodyLarge)
-            if (data == null) {
-                Disclaimer(stringResource(R.string.faskes_missing))
+            if (facilities.isEmpty()) {
+                EmptyState("Tambahkan fasilitas terlebih dahulu", "Isi identitas dan kontak fasilitas sebelum mengirim kabar kapasitas.", Icons.Filled.People)
+                BigButton("Kelola fasilitas", onClick = { vm.go(Screen.Faskes) })
                 return@Column
             }
-            MockLabel(stringResource(R.string.mock_label))
             SectionCard(stringResource(R.string.capacity_which)) {
-                data.faskes.forEach { f ->
+                facilities.forEach { f ->
                     Row(
-                        Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable { faskesId = f.id; sent = false }
-                            .semantics { role = SemanticsRole.RadioButton },
+                        Modifier.fillMaxWidth().heightIn(min = 48.dp).selectable(selected = faskesId == f.id, role = SemanticsRole.RadioButton, onClick = { faskesId = f.id; sent = false }),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = faskesId == f.id, onClick = { faskesId = f.id; sent = false })
-                        Text(f.nama, style = MaterialTheme.typography.bodyLarge)
+                        RadioButton(selected = faskesId == f.id, onClick = null)
+                        Text(f.name, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
             SectionCard(stringResource(R.string.capacity_status)) {
                 StatusKapasitas.entries.forEach { st ->
                     Row(
-                        Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable { status = st; sent = false }
-                            .semantics { role = SemanticsRole.RadioButton },
+                        Modifier.fillMaxWidth().heightIn(min = 52.dp).selectable(selected = status == st, role = SemanticsRole.RadioButton, onClick = { status = st; sent = false }),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = status == st, onClick = { status = st; sent = false })
+                        RadioButton(selected = status == st, onClick = null)
                         Text(st.label, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
@@ -156,9 +154,10 @@ fun CapacitySendScreen(vm: AppViewModel) {
             preview?.let { SectionCard(stringResource(R.string.confirm_raw)) { RawSms(it) } }
             if (!hasSmsPermission(context)) Disclaimer(stringResource(R.string.capacity_no_permission))
             BigButton(
-                stringResource(R.string.capacity_send, recipients.size), enabled = canSend,
+                if (vm.capacityBusy) stringResource(R.string.capacity_preparing) else stringResource(R.string.capacity_send, recipients.size), enabled = canSend,
                 icon = Icons.AutoMirrored.Filled.Send, onClick = { confirm = true },
             )
+            if (vm.capacityFailed) Disclaimer(stringResource(R.string.capacity_queue_failed))
             if (sent) Text(stringResource(R.string.capacity_queued), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.capacity_trust_note), style = MaterialTheme.typography.bodySmall)
 
@@ -183,8 +182,8 @@ fun CapacitySendScreen(vm: AppViewModel) {
             confirmButton = {
                 TextButton(onClick = {
                     confirm = false
-                    status?.let { vm.sendCapacity(faskesId, it, bedsInt, recipients, context) }
-                    sent = true
+                    sent = false
+                    status?.let { vm.sendCapacity(faskesId, it, bedsInt, recipients, context) { sent = true } }
                 }) { Text(stringResource(R.string.capacity_confirm_yes)) }
             },
             dismissButton = { TextButton(onClick = { confirm = false }) { Text(stringResource(R.string.cancel)) } },
@@ -197,7 +196,7 @@ fun RecipientsScreen(vm: AppViewModel) {
     val recipients by vm.app.db.recipients().observeAll().collectAsState(initial = emptyList())
     var number by rememberSaveable { mutableStateOf("") }
     var label by rememberSaveable { mutableStateOf("") }
-    val numberOk = number.count { it.isDigit() } >= 5
+    val numberOk = id.bundasiaga.app.data.InputValidation.phone(number)
     Column(Modifier.fillMaxSize()) {
         BundaTopBar(stringResource(R.string.recipients_title), onBack = { vm.back() })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

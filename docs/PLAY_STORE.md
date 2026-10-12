@@ -20,8 +20,8 @@ Diverifikasi: APK `play` tidak berisi izin SMS maupun penerima SMS (dicek dengan
 
 ## 1. Kunci upload (sekali, simpan cadangannya)
 
-Tanpa `keystore.properties`, build release ditandatangani kunci debug. Itu cukup untuk pilot, tetapi
-**ditolak Play**.
+Tanpa `keystore.properties`, build release tidak ditandatangani. Siapkan keystore resmi
+untuk distribusi; kunci debug tidak digunakan sebagai pengganti.
 
 ```bash
 keytool -genkeypair -v -keystore ~/bundasiaga-upload.jks -alias upload \
@@ -99,13 +99,13 @@ Play Console berbahasa Inggris, jadi terjemahkan dulu sebelum menempelkannya.
 
 Biasanya diminta juga **video** singkat yang memperlihatkan fitur ini. Rekam dari HP nyata:
 isi pemeriksaan → Kirim → mode pesawat → status "belum terkirim, dicoba ulang" → mode pesawat mati →
-"Terkirim" → balasan puskesmas "Diterima". Skenario ada di [DEMO_SCRIPT.md](DEMO_SCRIPT.md).
+"Terkirim" → balasan puskesmas "Diterima". Skenario ada di [PANDUAN_PENGGUNAAN.md](PANDUAN_PENGGUNAAN.md).
 
 Jika ditolak: tetap pakai versi `play` untuk Play Store, dan versi `pilot` dipasang dinkes lewat MDM.
 
 ## 4. Sebelum rilis produksi
 
 - Tinjauan klinis selesai dan ditandatangani ([CLINICAL_REVIEW.md](CLINICAL_REVIEW.md)).
-- Data faskes nyata menggantikan MOCK.
+- Kontak fasilitas terkonfirmasi diisi melalui aplikasi.
 - Uji di HP fisik (P1–P20 di [MANUAL_TEST.md](MANUAL_TEST.md)).
 - Mulai dari jalur **internal testing** → **closed testing** (bidan koordinator) → produksi bertahap.

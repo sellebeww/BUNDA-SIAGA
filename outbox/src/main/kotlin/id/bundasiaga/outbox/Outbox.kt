@@ -117,11 +117,13 @@ class OutboxEngine(
         }
 
     /** DRAFT -> QUEUED. Idempoten untuk apa pun yang sudah diantrekan atau lebih jauh. */
-    suspend fun queue(id: Long): OutMessage? = lock.withLock {
+    suspend fun queue(id: Long, fallbackDestination: String? = null): OutMessage? = lock.withLock {
         val m = store.get(id) ?: return@withLock null
         if (m.state != OutState.DRAFT) return@withLock m
         val now = clock.now()
-        m.copy(state = OutState.QUEUED, queuedAt = now, expiresAt = now + policy.expireAfterMs, nextAttemptAt = now)
+        val destination = m.destination.ifBlank { fallbackDestination.orEmpty().trim() }
+        require(destination.isNotBlank()) { "nomor tujuan belum diisi" }
+        m.copy(destination = destination, state = OutState.QUEUED, queuedAt = now, expiresAt = now + policy.expireAfterMs, nextAttemptAt = now)
             .also { store.update(it) }
     }
 
@@ -142,34 +144,34 @@ class OutboxEngine(
 
         for (m in store.active()) {
             var cur = m
+            if (cur.expiresAt != null && now >= cur.expiresAt) {
+                store.update(cur.copy(state = OutState.EXPIRED, nextAttemptAt = null))
+                continue
+            }
             if (cur.state == OutState.SENDING) {
                 val started = cur.lastAttemptAt ?: now
                 if (now - started >= policy.sendingTimeoutMs) {
                     cur = failed(cur, SendError.TIMEOUT, now)
                     store.update(cur)
                 } else {
-                    wake(started + policy.sendingTimeoutMs)
+                    wake(minOf(started + policy.sendingTimeoutMs, cur.expiresAt ?: Long.MAX_VALUE))
                     continue
                 }
             }
-            if (cur.state == OutState.FAILED_RETRYING && cur.expiresAt != null && now >= cur.expiresAt) {
-                store.update(cur.copy(state = OutState.EXPIRED, nextAttemptAt = null))
-                continue
-            }
             val due = cur.nextAttemptAt ?: now
             if (due > now) {
-                wake(due)
+                wake(minOf(due, cur.expiresAt ?: Long.MAX_VALUE))
                 continue
             }
             val attempt = cur.attempts + 1
             val sending = cur.copy(state = OutState.SENDING, attempts = attempt, lastAttemptAt = now, nextAttemptAt = null)
             store.update(sending)
             when (val r = transport.submit(sending.id, attempt, sending.destination, sending.body)) {
-                SubmitResult.Submitted -> wake(now + policy.sendingTimeoutMs)
+                SubmitResult.Submitted -> wake(minOf(now + policy.sendingTimeoutMs, sending.expiresAt ?: Long.MAX_VALUE))
                 is SubmitResult.Failed -> {
                     val f = failed(sending, r.error, now)
                     store.update(f)
-                    f.nextAttemptAt?.let(::wake)
+                    f.nextAttemptAt?.let { wake(minOf(it, f.expiresAt ?: Long.MAX_VALUE)) }
                 }
             }
         }
@@ -197,11 +199,11 @@ class OutboxEngine(
     suspend fun onDelivered(localId: Long, ok: Boolean) = lock.withLock {
         val m = store.get(localId) ?: return@withLock
         if (!ok) return@withLock
-        if (m.state in setOf(OutState.SENDING, OutState.SENT, OutState.FAILED_RETRYING, OutState.EXPIRED)) {
+        if (m.state in setOf(OutState.QUEUED, OutState.SENDING, OutState.SENT, OutState.FAILED_RETRYING, OutState.EXPIRED) && m.attempts > 0) {
             store.update(
                 m.copy(
                     state = OutState.DELIVERED, deliveredAt = clock.now(), sentAt = m.sentAt ?: clock.now(),
-                    nextAttemptAt = null,
+                    nextAttemptAt = null, lastError = null,
                 ),
             )
         }

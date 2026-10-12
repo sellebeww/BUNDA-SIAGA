@@ -38,10 +38,7 @@ class Settings(context: Context) {
     var serverUrl: String by string("serverUrl")
     var serverToken: String by string("serverToken")
 
-    var simulationMode: Boolean by bool("simulationMode", false)
-    /** Khusus simulasi: berpura-pura radio tidak ada sinyal. */
-    var simulateNoService: Boolean by bool("simulateNoService", false)
-    /** FLAG_SECURE di layar pasien; bisa dimatikan untuk tangkapan layar demo. */
+    /** Melindungi layar pasien dari tangkapan layar. */
     var secureScreens: Boolean by bool("secureScreens", true)
 
     val isConfigured: Boolean get() = role != null && userName.isNotBlank()

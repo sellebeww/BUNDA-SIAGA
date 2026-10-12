@@ -62,6 +62,35 @@ class OutboxTest {
     private suspend fun state(id: Long) = store.get(id)!!.state
 
     @Test
+    fun missingDestinationIsResolvedWhenQueuedAndNeverChangesAfterSending() = runTest {
+        val id = engine.createDraft(OutKind.REFERRAL, "A7K2", "", body)
+        engine.queue(id, puskesmas)
+        assertEquals(puskesmas, store.get(id)!!.destination)
+        engine.processDue()
+        engine.onSendResult(id, 1, true, null)
+        engine.queue(id, "081234567899")
+        assertEquals(puskesmas, store.get(id)!!.destination)
+        assertEquals(OutState.SENT, state(id))
+        assertEquals(1, transport.submissions.size)
+    }
+
+    @Test
+    fun emptyDestinationCannotBeQueued() = runTest {
+        val id = engine.createDraft(OutKind.REFERRAL, "A7K2", "", body)
+        kotlin.test.assertFailsWith<IllegalArgumentException> { engine.queue(id) }
+        assertEquals(OutState.DRAFT, state(id))
+        engine.processDue()
+        assertTrue(transport.submissions.isEmpty())
+    }
+
+    @Test
+    fun queuingPreservesTheDestinationAlreadyConfirmedByUser() = runTest {
+        val id = engine.createDraft(OutKind.REFERRAL, "A7K2", puskesmas, body)
+        engine.queue(id, "081234567899")
+        assertEquals(puskesmas, store.get(id)!!.destination)
+    }
+
+    @Test
     fun happyPath_draftQueuedSendingSentDeliveredAcked() = runTest {
         val id = engine.createDraft(OutKind.REFERRAL, "A7K2", puskesmas, body)
         assertEquals(OutState.DRAFT, state(id))
@@ -238,6 +267,40 @@ class OutboxTest {
         engine.queue(id)
         engine.queue(id)
         assertEquals(OutState.SENDING, state(id))
+        assertEquals(1, transport.submissions.size)
+    }
+
+    @Test
+    fun queuedMessageExpiresBeforeFirstSendAfterLongOfflinePeriod() = runTest {
+        val id = engine.enqueue(OutKind.REFERRAL, "A7K2", puskesmas, body)
+        clock.advance(RetryPolicy().expireAfterMs)
+        assertNull(engine.processDue())
+        assertEquals(OutState.EXPIRED, state(id))
+        assertTrue(transport.submissions.isEmpty())
+    }
+
+    @Test
+    fun expiryWakesBeforeSendingTimeoutAndLateSuccessStillCounts() = runTest {
+        engine.policy = RetryPolicy(expireAfterMs = 1_000)
+        val id = engine.enqueue(OutKind.REFERRAL, "A7K2", puskesmas, body)
+        assertEquals(clock.now() + 1_000, engine.processDue())
+        clock.advance(1_000)
+        assertNull(engine.processDue())
+        assertEquals(OutState.EXPIRED, state(id))
+        engine.onSendResult(id, 1, true, null)
+        assertEquals(OutState.SENT, state(id))
+    }
+
+    @Test
+    fun lateDeliveryAfterManualRetryPreventsDuplicateSend() = runTest {
+        transport.immediate = SubmitResult.Failed(SendError.TIMEOUT)
+        val id = engine.enqueue(OutKind.REFERRAL, "A7K2", puskesmas, body)
+        engine.processDue()
+        engine.retryNow(id)
+        engine.onDelivered(id, true)
+        assertEquals(OutState.DELIVERED, state(id))
+        assertNull(store.get(id)!!.lastError)
+        assertNull(engine.processDue())
         assertEquals(1, transport.submissions.size)
     }
 

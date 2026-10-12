@@ -93,7 +93,7 @@ atau aplikasi chat. Di HP: Menu → Aturan dan pembaruan → Pilih file aturan. 
 
 Menu → Aturan dan pembaruan menampilkan per fase: versi, nomor urut, status, sumber
 ("Bawaan aplikasi" atau "Pembaruan (server/file), kunci …, dipasang …"), dan jumlah aturan.
-Hasil setiap pemeriksaan juga tercatat di Menu → Data, metrik, dan simulasi (`rules_check`, `rules_import`).
+Hasil setiap pemeriksaan juga tercatat di Menu → Privasi dan aktivitas (`rules_check`, `rules_import`).
 
 ## Ganti atau cabut kunci
 

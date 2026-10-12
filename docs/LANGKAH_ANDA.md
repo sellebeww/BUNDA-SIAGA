@@ -1,6 +1,6 @@
 # Yang Harus Anda Lakukan
 
-Semua kode untuk lima fitur baru sudah jadi dan sudah diuji (lihat [MANUAL_TEST.md](MANUAL_TEST.md)).
+Lihat [catatan rilis](RELEASE_0.3.md) untuk perubahan dan verifikasi terbaru.
 Dokumen ini berisi hal-hal yang **tidak bisa dikerjakan oleh kode**: keputusan, akun, kredensial,
 perangkat, dan tanda tangan manusia. Urutannya sesuai prioritas.
 
@@ -25,7 +25,7 @@ pedoman umum, **bukan** oleh tenaga kesehatan.
 
 ## 2. Uji di 2 HP fisik dengan SIM 🔴
 
-Emulator sudah lulus, tetapi HP sungguhan belum. Ikuti daftar P1–P20 di
+Pengujian perangkat fisik tetap diperlukan. Ikuti daftar P1–P20 di
 [MANUAL_TEST.md](MANUAL_TEST.md). Yang baru untuk fitur ini: P14–P20 (nifas, kapasitas, pembaruan
 aturan, versi Play). Siapkan HP murah (RAM 2 GB) dan HP Xiaomi/Oppo/Vivo.
 
@@ -37,12 +37,11 @@ adb install -r app/build/outputs/apk/pilot/debug/app-pilot-debug.apk
 
 ## 3. Data faskes nyata 🔴
 
-`app/src/main/assets/faskes.json` masih MOCK. Minta dari dinkes: nama faskes, **nomor HP resmi**
-tiap faskes, dan waktu tempuh dari tiap dusun. Nomor HP ini penting: kabar kapasitas lewat SMS
-hanya dipercaya dari nomor HP gateway puskesmas atau dari nomor yang tercatat di file ini.
-
-Formatnya sama persis dengan file sekarang; field `id` (misalnya `PKM1`) maksimal 8 huruf/angka
-dan dipakai di SMS kapasitas.
+Minta daftar nama fasilitas, nomor resmi, dan perkiraan waktu tempuh dari pengelola
+wilayah. Isi lewat **Fasilitas kesehatan → Tambah fasilitas** pada masing-masing
+perangkat. Gunakan kode 1–8 huruf/angka yang sama pada pengirim dan penerima kapasitas.
+Nomor tujuan puskesmas serta kontak fasilitas terdaftar menjadi daftar pengirim
+kapasitas yang dipercaya. Konfirmasikan kepemilikan nomor sebelum menyimpannya.
 
 ## 4. Pembaruan aturan tanpa rilis ulang APK 🟡
 

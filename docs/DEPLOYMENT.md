@@ -104,5 +104,5 @@ untuk Google Play). Perbandingan dan langkah Play Store: [PLAY_STORE.md](PLAY_ST
 2. Konsultasi Dinkes/Kemenkes: apakah perangkat lunak ini termasuk kategori alat kesehatan.
 3. Kepatuhan UU 27/2022 tentang Pelindungan Data Pribadi (data kesehatan = data pribadi spesifik):
    dasar pemrosesan, persetujuan, batas masa simpan, penunjukan pengendali data.
-4. Data faskes nyata dari dinkes (ganti `faskes.json`).
+4. Kontak fasilitas resmi dari dinkes diisi melalui menu Fasilitas kesehatan.
 5. Uji lapangan terbatas bersama bidan koordinator.

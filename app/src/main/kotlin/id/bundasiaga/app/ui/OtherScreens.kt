@@ -2,7 +2,7 @@ package id.bundasiaga.app.ui
 
 import android.content.Context
 import android.content.Intent
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,99 +46,12 @@ import org.json.JSONObject
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-data class Faskes(
-    val id: String,
-    val nama: String,
-    val jenis: String,
-    val kontak: String,
-    val kapasitas: String,
-    val kapasitasUpdatedAt: String,
-    val waktuTempuh: Map<String, Int>,
-)
-
-data class FaskesData(val note: String, val updatedAt: String, val dusun: List<Pair<String, String>>, val faskes: List<Faskes>) {
-    companion object {
-        /** Data MOCK bawaan. Mengembalikan null (dan UI mengatakannya) bila berkas hilang atau rusak. */
-        fun load(context: Context): FaskesData? = runCatching {
-            val o = JSONObject(context.assets.open("faskes.json").bufferedReader().use { it.readText() })
-            val dusun = o.getJSONArray("dusun").let { a -> (0 until a.length()).map { a.getJSONObject(it).let { d -> d.getString("id") to d.getString("nama") } } }
-            val fk = o.getJSONArray("faskes").let { a ->
-                (0 until a.length()).map { i ->
-                    val f = a.getJSONObject(i)
-                    val w = f.getJSONObject("waktu_tempuh_menit")
-                    Faskes(
-                        f.getString("id"), f.getString("nama"), f.getString("jenis"), f.getString("kontak"), f.getString("kapasitas"),
-                        f.getString("kapasitas_updated_at"), w.keys().asSequence().associateWith { w.getInt(it) },
-                    )
-                }
-            }
-            FaskesData(o.getString("note"), o.getString("updated_at"), dusun, fk)
-        }.getOrNull()
-    }
-}
-
-private fun daysAgo(date: String): Long? = runCatching { ChronoUnit.DAYS.between(LocalDate.parse(date.take(10)), LocalDate.now()) }.getOrNull()
-
-@Composable
-private fun ageText(date: String): String {
-    val d = daysAgo(date) ?: return date
-    return if (d <= 0) stringResource(R.string.age_today) else stringResource(R.string.age_days, d)
-}
-
-@Composable
-fun FaskesScreen(vm: AppViewModel) {
-    val context = LocalContext.current
-    val data = vm.app.faskes
-    val dusunId = vm.app.settings.dusunId
-    val capacity by vm.app.db.capacity().observeAll().collectAsState(initial = emptyList())
-    val now = System.currentTimeMillis()
-    Column(Modifier.fillMaxSize()) {
-        BundaTopBar(stringResource(R.string.menu_faskes), onBack = { vm.back() })
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (data == null) {
-                Disclaimer(stringResource(R.string.faskes_missing))
-                return@Column
-            }
-            MockLabel(stringResource(R.string.mock_label))
-            Text(data.note, style = MaterialTheme.typography.bodyMedium)
-            Text(stringResource(R.string.faskes_updated, ageText(data.updatedAt)), style = MaterialTheme.typography.bodyMedium)
-            Text(
-                stringResource(R.string.faskes_from, data.dusun.firstOrNull { it.first == dusunId }?.second ?: stringResource(R.string.faskes_no_dusun)),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            val sorted = data.faskes.sortedBy { it.waktuTempuh[dusunId] ?: Int.MAX_VALUE }
-            sorted.forEach { f ->
-                SectionCard(f.nama) {
-                    Text(f.jenis, style = MaterialTheme.typography.bodyMedium)
-                    KeyValue(
-                        stringResource(R.string.faskes_travel),
-                        f.waktuTempuh[dusunId]?.let { stringResource(R.string.faskes_travel_value, it / 60, it % 60) } ?: stringResource(R.string.unknown),
-                    )
-                    val live = capacity.firstOrNull { it.faskesId == f.id }
-                    if (live != null) {
-                        Text(stringResource(R.string.faskes_capacity), style = MaterialTheme.typography.bodyMedium)
-                        CapacityLine(live, now)
-                    } else {
-                        KeyValue(stringResource(R.string.faskes_capacity), f.kapasitas)
-                        KeyValue(stringResource(R.string.faskes_capacity_updated), ageText(f.kapasitasUpdatedAt))
-                        Text(stringResource(R.string.faskes_capacity_mock_note), style = MaterialTheme.typography.bodySmall)
-                    }
-                    SecondaryButton(stringResource(R.string.faskes_call, f.kontak), onClick = { dial(context, f.kontak) }, icon = Icons.Filled.Call)
-                }
-            }
-            Disclaimer(stringResource(R.string.faskes_estimate_note))
-        }
-    }
-}
-
 @Composable
 fun DebugScreen(vm: AppViewModel) {
     val context = LocalContext.current
     val s = vm.app.settings
     val scope = rememberCoroutineScope()
     val events by vm.app.db.metrics().observeRecent().collectAsState(initial = emptyList())
-    var sim by remember { mutableStateOf(s.simulationMode) }
-    var noService by remember { mutableStateOf(s.simulateNoService) }
     var secure by remember { mutableStateOf(s.secureScreens) }
     var durations by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     LaunchedEffect(events.size) {
@@ -148,23 +61,6 @@ fun DebugScreen(vm: AppViewModel) {
     Column(Modifier.fillMaxSize()) {
         BundaTopBar(stringResource(R.string.menu_debug), onBack = { vm.back() })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SectionCard(stringResource(R.string.sim_section)) {
-                Text(stringResource(R.string.sim_explain), style = MaterialTheme.typography.bodyMedium)
-                ToggleRow(stringResource(R.string.sim_mode), sim) {
-                    sim = it; s.simulationMode = it
-                    if (!it) { noService = false; s.simulateNoService = false }
-                    vm.settingsChanged()
-                }
-                ToggleRow(stringResource(R.string.sim_no_service), noService, enabled = sim) {
-                    noService = it; s.simulateNoService = it
-                    vm.settingsChanged()
-                    // "Memulihkan" sinyal harus langsung mengirim ulang dari antrian.
-                    if (!it) vm.app.runner.serviceRestored()
-                }
-                if (sim && s.role != Role.KADER) {
-                    SecondaryButton(stringResource(R.string.sim_inject), onClick = { vm.injectSimulatedReferral() }, icon = Icons.Filled.MoveToInbox)
-                }
-            }
             SectionCard(stringResource(R.string.privacy_section)) {
                 ToggleRow(stringResource(R.string.secure_screens), secure) {
                     secure = it; s.secureScreens = it
@@ -205,12 +101,11 @@ fun DebugScreen(vm: AppViewModel) {
 @Composable
 private fun ToggleRow(label: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(enabled = enabled) { onChange(!checked) }
-            .semantics { role = SemanticsRole.Switch },
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).toggleable(value = checked, enabled = enabled, role = SemanticsRole.Switch, onValueChange = onChange),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = onChange, enabled = enabled)
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }
 
@@ -220,7 +115,7 @@ object Metrics {
         Triple("checklist_start", "result_shown", "Mulai periksa → hasil"),
         Triple("send_attempt", "sent", "Tekan kirim → diterima jaringan"),
         Triple("send_attempt", "ack_received", "Tekan kirim → balasan puskesmas"),
-        Triple("case_received", "ack_sent", "Rujukan masuk → ACK dikirim"),
+        Triple("case_received", "ack_queued", "Rujukan masuk → balasan diantrekan"),
     )
 
     fun durations(all: List<MetricEntity>): List<Pair<String, String>> = pairs.mapNotNull { (from, to, label) ->
@@ -263,7 +158,6 @@ fun HonestyScreen(vm: AppViewModel) {
         R.string.h_encrypt to R.string.h_encrypt_v,
         R.string.h_faskes to R.string.h_faskes_v,
         R.string.h_retry to R.string.h_retry_v,
-        R.string.h_sim to R.string.h_sim_v,
         R.string.h_field to R.string.h_field_v,
         R.string.h_data to R.string.h_data_v,
     )

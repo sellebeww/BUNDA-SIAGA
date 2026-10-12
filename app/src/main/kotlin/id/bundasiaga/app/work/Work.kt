@@ -32,6 +32,7 @@ import android.telephony.PhoneStateListener
 import android.telephony.ServiceState
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
@@ -209,34 +210,48 @@ class SyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, 
         // Kasus simulasi demo tidak pernah keluar dari HP.
         val pending = app.db.cases().unsynced().filter { it.sender != SIMULATED_SENDER }
         if (pending.isEmpty()) return Result.success()
-        val payload = JSONObject()
-            .put("facility", s.userName)
-            .put("facilityLokasi", s.lokasi)
-            .put("cases", JSONArray(pending.map { it.toJson() }))
         return try {
-            val url = URL(s.serverUrl.trimEnd('/') + "/api/v1/cases")
-            val conn = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                connectTimeout = 15_000
-                readTimeout = 15_000
-                doOutput = true
-                setRequestProperty("Content-Type", "application/json; charset=utf-8")
-                setRequestProperty("Authorization", "Bearer ${s.serverToken}")
-            }
-            conn.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
-            val code = conn.responseCode
-            conn.disconnect()
-            when (code) {
-                in 200..299 -> {
-                    val now = app.clock.now()
-                    pending.forEach { app.db.cases().markSynced(it.id, now) }
-                    app.metric("sync_ok", null, pending.size.toString())
-                    Result.success()
+            for (batch in pending.chunked(100)) {
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                val payload = JSONObject()
+                    .put("facility", s.userName)
+                    .put("facilityLokasi", s.lokasi)
+                    .put("cases", JSONArray(batch.map { it.toJson() }))
+                val url = URL(s.serverUrl.trimEnd('/') + "/api/v1/cases")
+                val conn = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    connectTimeout = 15_000
+                    readTimeout = 15_000
+                    doOutput = true
+                    instanceFollowRedirects = false
+                    setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    setRequestProperty("Authorization", "Bearer ${s.serverToken}")
                 }
-                401, 403 -> { app.metric("sync_auth_failed", null, code.toString()); Result.failure() }
-                else -> Result.retry()
+                val code = try {
+                    conn.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
+                    conn.responseCode
+                } finally {
+                    conn.disconnect()
+                }
+                kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                when (code) {
+                    in 200..299 -> {
+                        val now = app.clock.now()
+                        batch.forEach {
+                            // Only acknowledge the snapshot actually uploaded. An ACK or
+                            // duplicate arriving during this request must remain pending.
+                            app.db.cases().markSynced(it.id, now, it.ackAt, it.ackStatus, it.duplicates)
+                        }
+                        app.metric("sync_ok", null, batch.size.toString())
+                    }
+                    401, 403 -> { app.metric("sync_auth_failed", null, code.toString()); return Result.failure() }
+                    else -> return Result.retry()
+                }
             }
-        } catch (e: Exception) {
+            Result.success()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
             Result.retry()
         }
     }
@@ -264,7 +279,7 @@ class SyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, 
     companion object {
         fun schedule(context: Context) {
             WorkManager.getInstance(context).enqueueUniqueWork(
-                "sync", ExistingWorkPolicy.REPLACE,
+                "sync", ExistingWorkPolicy.APPEND_OR_REPLACE,
                 OneTimeWorkRequestBuilder<SyncWorker>()
                     .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                     .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)

@@ -1,6 +1,7 @@
 package id.bundasiaga.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,10 +15,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -40,6 +43,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import id.bundasiaga.app.R
 import id.bundasiaga.rules.Level
@@ -48,7 +52,8 @@ import id.bundasiaga.rules.Level
 @Composable
 fun BundaTopBar(title: String, onBack: (() -> Unit)?, actions: @Composable () -> Unit = {}) {
     TopAppBar(
-        title = { Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1) },
+        title = { Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        windowInsets = WindowInsets(0, 0, 0, 0),
         navigationIcon = {
             if (onBack != null) {
                 IconButton(onClick = onBack, modifier = Modifier.size(56.dp)) {
@@ -58,27 +63,10 @@ fun BundaTopBar(title: String, onBack: (() -> Unit)?, actions: @Composable () ->
         },
         actions = { actions() },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = TealDark, titleContentColor = Color.White,
-            navigationIconContentColor = Color.White, actionIconContentColor = Color.White,
+            containerColor = Cream, titleContentColor = TealDark,
+            navigationIconContentColor = TealDark, actionIconContentColor = TealDark,
         ),
     )
-}
-
-/** Tampil di setiap layar selama mode simulasi aktif, agar demo tidak pernah tampak seperti kenyataan. */
-@Composable
-fun SimulationBanner(visible: Boolean, noService: Boolean) {
-    if (!visible) return
-    Row(
-        Modifier.fillMaxWidth().background(Color(0xFF6A1B9A)).padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(Icons.Filled.Science, contentDescription = null, tint = Color.White)
-        Spacer(Modifier.width(8.dp))
-        Text(
-            stringResource(if (noService) R.string.sim_banner_no_service else R.string.sim_banner),
-            color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium,
-        )
-    }
 }
 
 @Composable
@@ -132,7 +120,6 @@ fun LevelBanner(level: Level, modifier: Modifier = Modifier, compact: Boolean = 
         modifier
             .fillMaxWidth()
             .background(st.bg, RoundedCornerShape(16.dp))
-            .border(3.dp, Color.Black.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
             .padding(if (compact) 12.dp else 20.dp)
             .semantics(mergeDescendants = true) { contentDescription = "$word. $action" },
         verticalAlignment = Alignment.CenterVertically,
@@ -163,16 +150,59 @@ fun LevelChip(level: Level) {
 fun SectionCard(title: String?, modifier: Modifier = Modifier, container: Color = Color.White, content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = container),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (title != null) {
                 Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
             }
             content()
         }
+    }
+}
+
+/** An entire card is a touch target; descriptions remain readable at large font scales. */
+@Composable
+fun ActionCard(title: String, description: String, icon: ImageVector, onClick: () -> Unit, prominent: Boolean = false) {
+    val background = if (prominent) TealDark else Color.White
+    val foreground = if (prominent) Color.White else Ink
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = background),
+        border = if (prominent) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Box(
+                Modifier.background(if (prominent) Color.White.copy(alpha = .12f) else MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(16.dp)).padding(12.dp),
+                contentAlignment = Alignment.Center,
+            ) { Icon(icon, null, tint = if (prominent) Color.White else Teal, modifier = Modifier.size(28.dp)) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, color = foreground)
+                Text(description, style = MaterialTheme.typography.bodySmall, color = if (prominent) Color(0xFFD5EAE4) else MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(Icons.Filled.ChevronRight, null, tint = foreground, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+fun EmptyState(title: String, description: String, icon: ImageVector) {
+    SectionCard(null) {
+        Icon(icon, null, tint = Teal, modifier = Modifier.size(32.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+fun SectionHeading(title: String, subtitle: String? = null) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+        if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -204,7 +234,7 @@ fun Disclaimer(text: String) {
 }
 
 @Composable
-fun MockLabel(text: String) {
+fun StatusLabel(text: String) {
     Text(
         text,
         modifier = Modifier.background(Color(0xFF455A64), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp),

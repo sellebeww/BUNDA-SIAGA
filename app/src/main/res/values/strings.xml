@@ -8,7 +8,6 @@
     <string name="not_measured">Tidak diukur</string>
     <string name="weeks">%1$d minggu</string>
     <string name="minutes_fmt">%1$s menit</string>
-    <string name="mock_label">MOCK: DATA CONTOH</string>
     <string name="needs_review_label">Teks panduan ini masih DRAFT dan perlu ditinjau bidan/dokter.</string>
 
     <!-- Level: warna selalu berpasangan dengan ikon dan kata-kata ini -->
@@ -35,7 +34,7 @@
     <!-- Pengaturan awal -->
     <string name="setup_title">Pengaturan</string>
     <string name="setup_intro">Alat bantu untuk mengenali tanda bahaya kehamilan dan mengirim rujukan lewat SMS, tanpa internet. Hasilnya adalah sinyal prioritas, bukan diagnosis.</string>
-    <string name="setup_role">Siapa yang memakai HP ini?</string>
+    <string name="setup_role">1. Siapa yang memakai HP ini?</string>
     <string name="role_kader">Kader posyandu</string>
     <string name="role_kader_desc">Memeriksa tanda bahaya dan mengirim rujukan. Bisa tanpa alat tensi.</string>
     <string name="role_bidan">Bidan desa</string>
@@ -46,7 +45,6 @@
     <string name="setup_name_hint">Contoh: Bu Mince, atau Puskesmas Contoh</string>
     <string name="setup_lokasi">Kode lokasi</string>
     <string name="setup_lokasi_hint">Huruf dan angka, maks. 8. Contoh: DSA12. Ikut terkirim di SMS.</string>
-    <string name="setup_dusun">Dusun (untuk perkiraan waktu tempuh)</string>
     <string name="setup_dest">Nomor HP tujuan rujukan</string>
     <string name="setup_dest_hint">Nomor HP puskesmas atau bidan yang menerima rujukan.</string>
     <string name="setup_callback">Nomor untuk telepon balik (boleh kosong)</string>
@@ -72,11 +70,11 @@
     <string name="home_inbox">Rujukan masuk</string>
     <string name="home_no_dest">Nomor tujuan rujukan belum diisi. Buka Menu → Pengaturan.</string>
     <string name="home_recent">Rujukan terakhir</string>
-    <string name="home_recent_empty">Belum ada rujukan yang dikirim.</string>
+    <string name="home_recent_empty">Rujukan yang Anda buat akan tampil di sini. Ketuk kartu untuk melanjutkan atau melihat statusnya.</string>
     <string name="menu_faskes">Faskes dan waktu tempuh</string>
     <string name="menu_stabilization">Panduan sambil menunggu</string>
     <string name="menu_settings">Pengaturan</string>
-    <string name="menu_debug">Data, metrik, dan simulasi</string>
+    <string name="menu_debug">Privasi dan aktivitas</string>
     <string name="menu_honesty">Yang nyata dan yang belum</string>
 
     <!-- Pengantar pemeriksaan -->
@@ -219,7 +217,7 @@
 
     <!-- Ringkasan -->
     <string name="summary_title">Ringkasan</string>
-    <string name="summary_note">Dihitung dari data di HP ini saja. Kasus simulasi tidak dihitung.</string>
+    <string name="summary_note">Dihitung dari data di HP ini saja. Hanya rujukan yang diterima melalui SMS yang dihitung.</string>
     <string name="summary_by_level">Jumlah per tingkat</string>
     <string name="summary_unparsed">Format tidak dikenal</string>
     <string name="summary_ack">Balasan</string>
@@ -232,29 +230,8 @@
     <string name="summary_sync_on">Ke %1$s. Belum terkirim: %2$d kasus (menunggu internet).</string>
 
     <!-- Faskes -->
-    <string name="faskes_missing">Data faskes tidak tersedia di HP ini.</string>
-    <string name="faskes_updated">Data diperbarui %1$s</string>
-    <string name="faskes_from">Dari: %1$s</string>
-    <string name="faskes_no_dusun">dusun belum dipilih di Pengaturan</string>
-    <string name="faskes_travel">Perkiraan waktu tempuh</string>
-    <string name="faskes_travel_value">%1$d jam %2$d menit</string>
-    <string name="faskes_capacity">Kapasitas</string>
-    <string name="faskes_capacity_updated">Kapasitas diperbarui</string>
-    <string name="faskes_call">Telepon %1$s</string>
-    <string name="faskes_estimate_note">Waktu tempuh adalah perkiraan, bukan pelacakan langsung. Kapasitas diisi manual dan bisa sudah berubah: telepon dulu.</string>
-    <string name="age_today">hari ini</string>
-    <string name="age_days">%1$d hari lalu</string>
 
-    <!-- Debug / simulasi -->
-    <string name="sim_section">Mode simulasi (untuk demo)</string>
-    <string name="sim_explain">Mode simulasi bisa berpura-pura tidak ada sinyal, supaya antrian dan kirim ulang otomatis bisa diperlihatkan. Saat aktif, pita ungu MODE SIMULASI selalu tampil. SMS yang terkirim setelah sinyal dipulihkan adalah SMS sungguhan.</string>
-    <string name="sim_mode">Aktifkan mode simulasi</string>
-    <string name="sim_no_service">Simulasikan tidak ada sinyal</string>
-    <string name="sim_inject">Masukkan rujukan simulasi ke kotak masuk</string>
-    <string name="sim_banner">MODE SIMULASI</string>
-    <string name="sim_banner_no_service">MODE SIMULASI: sinyal dibuat mati</string>
-    <string name="sim_case_label">SIMULASI</string>
-    <string name="sim_ack_local">Kasus simulasi: balasan hanya dicatat di HP ini, tidak ada SMS dikirim.</string>
+    <!-- Privasi dan aktivitas -->
     <string name="privacy_section">Privasi layar</string>
     <string name="secure_screens">Blokir tangkapan layar (disarankan tetap aktif)</string>
     <string name="metrics_section">Metrik (diukur di HP ini)</string>
@@ -276,17 +253,15 @@
     <string name="h_encrypt">Keamanan SMS</string>
     <string name="h_encrypt_v">SMS TIDAK TERENKRIPSI. Karena itu hanya kode pasien dan data minimal yang dikirim. Data di HP disimpan terenkripsi.</string>
     <string name="h_faskes">Data faskes dan waktu tempuh</string>
-    <string name="h_faskes_v">MOCK. Contoh saja, bukan data nyata.</string>
+    <string name="h_faskes_v">Kontak fasilitas diisi dan diperbarui oleh pengguna. Konfirmasikan nomor serta ketersediaan layanan sebelum merujuk.</string>
     <string name="h_retry">Kirim ulang otomatis</string>
     <string name="h_retry_v">NYATA, dengan batas: penghemat baterai HP tertentu bisa memperlambat percobaan saat aplikasi tertutup lama.</string>
-    <string name="h_sim">Mode simulasi</string>
-    <string name="h_sim_v">Hanya untuk demo, selalu diberi tanda ungu di layar.</string>
     <string name="h_field">Uji lapangan</string>
     <string name="h_field_v">BELUM ADA. Belum diuji dengan kader, bidan, atau pasien sungguhan.</string>
     <string name="h_data">Data pasien</string>
     <string name="h_data_v">Hanya inisial dan nomor urut, disimpan terenkripsi di HP, tidak ikut cadangan otomatis.</string>
     <!-- Mode NIFAS -->
-    <string name="home_start_nifas">Periksa Ibu Nifas (sudah melahirkan)</string>
+    <string name="home_start_nifas">Periksa Ibu Nifas</string>
     <string name="intro_title_nifas">Data ibu nifas</string>
     <string name="intro_hari">Sudah berapa hari sejak melahirkan?</string>
     <string name="intro_hari_label">Hari ke- (0 = hari melahirkan)</string>
@@ -340,7 +315,6 @@
     <string name="ago_minutes">%1$d menit lalu</string>
     <string name="ago_hours">%1$d jam lalu</string>
     <string name="ago_days">%1$d hari lalu</string>
-    <string name="faskes_capacity_mock_note">Belum ada kabar kapasitas lewat SMS untuk faskes ini. Angka di atas dari data contoh.</string>
     <string name="recipients_title">Penerima kabar kapasitas</string>
     <string name="recipients_intro">Nomor HP kader dan bidan desa yang menerima kabar kapasitas. Nomor hanya disimpan di HP ini (terenkripsi).</string>
     <string name="recipients_add">Tambah penerima</string>
@@ -385,4 +359,41 @@
     <string name="h_rules_update_v">NYATA, bila kunci dinkes dipasang. Hanya file bertanda tangan yang lolos uji keamanan yang dipakai.</string>
     <string name="h_capacity">Kabar kapasitas lewat SMS</string>
     <string name="h_capacity_v">NYATA, diisi manual oleh petugas puskesmas. Bisa terlambat atau sudah berubah; telepon dulu untuk kasus MERAH.</string>
+    <string name="home_offline">Pemeriksaan bisa digunakan tanpa internet</string>
+    <string name="home_care_title">Dampingi ibu, mulai dari sini</string>
+    <string name="home_care_subtitle">Pilih pemeriksaan sesuai kondisi ibu.</string>
+    <string name="home_hamil_desc">Periksa tanda bahaya selama kehamilan</string>
+    <string name="home_nifas_desc">Periksa kondisi ibu setelah melahirkan</string>
+    <string name="home_inbox_desc">Lihat rujukan masuk dan berikan balasan</string>
+    <string name="home_resources">Panduan dan fasilitas</string>
+    <string name="home_faskes_desc">Kontak, kapasitas, dan perkiraan waktu tempuh</string>
+    <string name="home_guide_desc">Lihat panduan pendampingan sebelum rujukan</string>
+    <string name="home_recent_limit">Maksimal 50 rujukan terakhir, termasuk draf.</string>
+    <string name="home_empty_title">Belum ada rujukan</string>
+    <string name="setup_welcome">Selamat datang, pendamping ibu</string>
+    <string name="setup_profile_section">2. Identitas petugas</string>
+    <string name="setup_contact_section">3. Kontak rujukan</string>
+    <string name="setup_optional_section">Pengaturan tambahan (opsional)</string>
+    <string name="setup_optional_note">Atur dusun dan server jika informasinya sudah tersedia.</string>
+    <string name="show_token">Tampilkan token</string>
+    <string name="hide_token">Sembunyikan token</string>
+    <string name="inbox_empty_title">Kotak masuk masih kosong</string>
+    <string name="inbox_filter_all">Semua</string>
+    <string name="inbox_filter_pending">Belum dibalas</string>
+    <string name="inbox_filter_red">Merah</string>
+    <string name="inbox_search">Cari kode pasien atau lokasi</string>
+    <string name="inbox_no_match">Tidak ada rujukan yang sesuai</string>
+    <string name="inbox_no_match_hint">Coba kata kunci lain atau pilih filter Semua.</string>
+    <string name="inbox_count">%1$d rujukan · %2$d belum dibalas</string>
+    <string name="external_app_missing">Aplikasi tujuan tidak tersedia. Gunakan nomor atau teks SMS yang ditampilkan.</string>
+    <string name="loading_title">Menyiapkan BUNDA SIAGA</string>
+    <string name="loading_detail">Membuka penyimpanan aman dan aturan pemeriksaan…</string>
+    <string name="loading_error">Penyimpanan belum dapat dibuka</string>
+    <string name="loading_error_detail">Coba lagi. Jika tetap gagal, hubungi pengelola aplikasi. Jangan hapus data aplikasi karena berisi catatan rujukan.</string>
+    <string name="try_again">Coba lagi</string>
+    <string name="intro_identity_section">Identitas pemeriksaan</string>
+    <string name="draft_error">Draf belum dapat disimpan. Coba lagi sebelum meninggalkan hasil pemeriksaan.</string>
+    <string name="capacity_preparing">Menyiapkan pengiriman…</string>
+    <string name="capacity_queue_failed">Sebagian pengiriman mungkin belum tersimpan. Periksa riwayat pengiriman sebelum mencoba lagi.</string>
+    <string name="history_title">Riwayat pemeriksaan</string>
 </resources>

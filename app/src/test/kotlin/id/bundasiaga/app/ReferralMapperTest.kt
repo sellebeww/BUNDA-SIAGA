@@ -71,6 +71,17 @@ class ReferralMapperTest {
     }
 
     @Test
+    fun patientCodeUsesLatinDigitsInEveryLocale() {
+        val previous = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("ar-EG"))
+            assertEquals("YL07", ReferralMapper.patientCode("YL", 7))
+        } finally {
+            java.util.Locale.setDefault(previous)
+        }
+    }
+
+    @Test
     fun bpPlausibility() {
         assertEquals(true, ReferralMapper.isBpPlausible(168, 112))
         assertEquals(false, ReferralMapper.isBpPlausible(82, 83))

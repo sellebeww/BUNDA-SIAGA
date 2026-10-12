@@ -13,8 +13,7 @@ import id.bundasiaga.app.data.RoomInboxStore
 import id.bundasiaga.app.data.RulesRepository
 import id.bundasiaga.app.data.RoomOutboxStore
 import id.bundasiaga.app.data.Settings
-import id.bundasiaga.app.sms.SimAwareTransport
-import id.bundasiaga.app.ui.FaskesData
+import id.bundasiaga.app.sms.SmsTransport
 import id.bundasiaga.app.work.OutboxRunner
 import id.bundasiaga.app.work.RulesUpdateWorker
 import id.bundasiaga.outbox.CapacityReceiver
@@ -39,9 +38,7 @@ class BundaApp : Application() {
      * Pemakaian pertama memeriksa berkas: panggil dari luar thread utama.
      */
     val rules by lazy { RulesRepository(this) { clock.now() } }
-    /** Daftar faskes bawaan (MOCK sampai dinkes menyediakan data nyata). */
-    val faskes by lazy { FaskesData.load(this) }
-    val transport by lazy { SimAwareTransport(this, settings) }
+    val transport by lazy { SmsTransport(this) }
     val outbox by lazy {
         OutboxEngine(RoomOutboxStore(db.outbox()), transport, clock, currentPolicy())
     }
@@ -58,10 +55,10 @@ class BundaApp : Application() {
      */
     fun trustedCapacitySenders(): Set<String> = buildSet {
         settings.destinationNumber.takeIf { it.isNotBlank() }?.let(::add)
-        faskes?.faskes?.forEach { f -> f.kontak.takeIf { it.isNotBlank() }?.let(::add) }
+        db.facilities().phoneNumbers().filter { it.isNotBlank() }.forEach(::add)
     }
 
-    fun currentPolicy() = if (settings.simulationMode) RetryPolicy.SIMULATION else RetryPolicy()
+    fun currentPolicy() = RetryPolicy()
 
     fun refreshPolicy() {
         outbox.policy = currentPolicy()

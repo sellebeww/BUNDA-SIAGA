@@ -64,7 +64,7 @@ Android yang sama (`SMS_RECEIVED`).
 
 | # | Skenario | Langkah | Yang diharapkan |
 |---|---|---|---|
-| P1 | End-to-end nyata | Ikuti `DEMO_SCRIPT.md` dengan Wi-Fi dan data mati | Status kader menjadi "Diterima" |
+| P1 | End-to-end nyata | Ikuti `PANDUAN_PENGGUNAAN.md` dengan Wi-Fi dan data mati | Status kader menjadi "Diterima" |
 | P2 | Mode pesawat → kembali | HP-KADER mode pesawat, kirim rujukan, tunggu 1 menit, matikan mode pesawat, **jangan sentuh HP** | Terkirim otomatis ≤ ± 1 menit setelah sinyal kembali |
 | P3 | Aplikasi ditutup saat antrian | Seperti P2, tetapi geser tutup aplikasi dari Recents sebelum sinyal kembali | Notifikasi "Mengirim rujukan" tetap ada; terkirim otomatis |
 | P4 | Layar mati lama (Doze) | Seperti P2, layar mati 30 menit sebelum sinyal kembali | Catat berapa lama sampai terkirim. **Ini batas yang diketahui** |
@@ -93,3 +93,20 @@ adb emu gsm voice unregistered   # sinyal hilang
 adb emu gsm voice home           # sinyal kembali
 adb logcat -b crash              # crash
 ```
+
+## Pemeriksaan tambahan versi 0.3
+
+- Tutup proses aplikasi setelah menjawab beberapa pertanyaan. Buka kembali dan
+  lanjutkan pemeriksaan dari beranda; jawaban sebelumnya tetap tersedia lewat Kembali.
+- Akhiri pemeriksaan tanpa membuat rujukan. Pastikan hasil muncul di Riwayat dan
+  dapat dicari memakai kode pasien serta filter prioritas.
+- Buka hasil lama setelah aturan diperbarui. Prioritas, alasan, dan versi hasil
+  harus tetap sesuai arsip; pemeriksaan tertunda dengan versi berbeda tidak dilanjutkan.
+- Tambahkan fasilitas, edit kontaknya, rotasikan perangkat saat mengedit, cari nama,
+  dan hapus setelah konfirmasi. Nomor tidak valid serta kode duplikat harus ditolak.
+- Buka keyboard pada formulir dengan ukuran teks 150%; tombol dan kolom terakhir
+  harus tetap dapat dijangkau dengan menggulir.
+- Ketuk Kirim dan tombol balasan berulang. Satu tindakan tidak membuat beberapa
+  pesan identik; status yang sudah terkirim tidak kembali menjadi antrean baru.
+- Tingkatkan APK dari skema database v2 ke v3 tanpa menghapus data. Hasil, rujukan,
+  balasan, dan penerima lama harus tetap ada.

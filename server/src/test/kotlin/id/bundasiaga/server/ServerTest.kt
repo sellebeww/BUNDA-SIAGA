@@ -64,6 +64,28 @@ class ServerTest {
     }
 
     @Test
+    fun dashboardDoesNotInterpolateUntrustedLevelIntoHtmlAttributes() {
+        val payload = "\"><img src=x onerror=alert(1)>"
+        val html = Dashboard.render(
+            listOf(CaseRow("PKM", CaseIn(caseKey = "one", tingkat = payload, receivedAt = 1000), 1000)),
+            emptyMap(), 1000,
+        )
+        assertTrue(payload !in html)
+        assertTrue("class=\"lv X\"" in html)
+        assertTrue("&lt;img" in html, "unknown level remains readable as escaped text")
+    }
+
+    @Test
+    fun negativeAckTimesDoNotDistortMedian() {
+        val rows = listOf(
+            CaseRow("PKM", CaseIn(caseKey = "one", receivedAt = 120_000, ackAt = 60_000), 0),
+            CaseRow("PKM", CaseIn(caseKey = "two", receivedAt = 120_000, ackAt = 300_000), 0),
+        )
+        assertEquals(3.0, Dashboard.summary(rows).medianMinutesToAck)
+        assertEquals(2, Dashboard.summary(rows).acked)
+    }
+
+    @Test
     fun summaryCounts() = testApplication {
         val st = store()
         application { module(st, ServerConfig(setOf(token), "dinkes", "")) }

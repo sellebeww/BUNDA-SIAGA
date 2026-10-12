@@ -1,5 +1,7 @@
 package id.bundasiaga.codec
 
+import java.util.Locale
+
 /**
  * Format kawat BS1. Satu SMS, <= 160 karakter GSM-7, hanya himpunan karakter dasar
  * `A-Z 0-9 ; . / - :` (tanpa karakter tabel perluasan yang memakan dua septet,
@@ -86,7 +88,7 @@ data class Waktu(val day: Int, val hour: Int, val minute: Int) {
     init {
         require(day in 1..31 && hour in 0..23 && minute in 0..59) { "waktu tidak valid $day $hour $minute" }
     }
-    fun encode() = "%02d%02d%02d".format(day, hour, minute)
+    fun encode() = String.format(Locale.ROOT, "%02d%02d%02d", day, hour, minute)
 }
 
 data class Rujukan(
@@ -142,17 +144,18 @@ object Encoder {
                 if (r.hariNifas != null) throw EncodeException("hariNifas pada rujukan HAMIL")
                 r.usiaMinggu?.let {
                     if (it !in 1..45) throw EncodeException("usia di luar rentang")
-                    "%02d".format(it)
+                    String.format(Locale.ROOT, "%02d", it)
                 } ?: "-"
             }
             FaseRujukan.NIFAS -> {
                 if (r.usiaMinggu != null) throw EncodeException("usiaMinggu pada rujukan NIFAS")
                 r.hariNifas?.let {
                     if (it !in Bs1.HARI_RANGE) throw EncodeException("hari di luar rentang")
-                    "%02d".format(it)
+                    String.format(Locale.ROOT, "%02d", it)
                 } ?: "-"
             }
         }
+        if ((r.tdSistolik == null) != (r.tdDiastolik == null)) throw EncodeException("incomplete TD")
         val td = if (r.tdSistolik != null && r.tdDiastolik != null) {
             if (r.tdSistolik !in 40..300 || r.tdDiastolik !in 20..200) throw EncodeException("TD di luar rentang")
             "${r.tdSistolik}/${r.tdDiastolik}"
@@ -276,6 +279,7 @@ object Decoder {
                 val m = TD.matchEntire(f[6]) ?: return bad("TD")
                 sis = m.groupValues[1].toInt()
                 dia = m.groupValues[2].toInt()
+                if (sis !in 40..300 || dia !in 20..200) return bad("TD")
             }
             val tanda = if (f[7] == "-") emptyList() else f[7].split('.')
             tanda.forEach { t ->

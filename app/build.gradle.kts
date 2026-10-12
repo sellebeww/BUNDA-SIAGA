@@ -16,12 +16,12 @@ android {
         applicationId = "id.bundasiaga.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
 
     // Kunci rilis/unggah dari keystore.properties (jangan pernah di-commit). Tanpa file ini,
-    // build rilis memakai kunci debug: cukup untuk pilot, tetapi ditolak Play.
+    // build rilis tidak ditandatangani; kunci debug tidak pernah dipakai untuk rilis.
     val keystoreProps = rootProject.file("keystore.properties").takeIf { it.exists() }
         ?.let { f -> Properties().apply { f.inputStream().use { load(it) } } }
     signingConfigs {
@@ -57,7 +57,7 @@ android {
         }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
         }
     }
     compileOptions {
@@ -88,6 +88,7 @@ ksp {
 }
 
 dependencies {
+    implementation(libs.kotlinx.serialization.json)
     implementation(project(":rules"))
     implementation(project(":codec"))
     implementation(project(":outbox"))

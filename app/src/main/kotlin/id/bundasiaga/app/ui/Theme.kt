@@ -20,9 +20,9 @@ import id.bundasiaga.rules.Level
 // Palet diambil dari logo BUNDA SIAGA.
 val Teal = Color(0xFF1F6F6B)
 val TealDark = Color(0xFF0F4C4A)
-val Coral = Color(0xFFE0625A)
-val Cream = Color(0xFFF8F1E7)
-val Ink = Color(0xFF1B1B1B)
+val Coral = Color(0xFFAD4942)
+val Cream = Color(0xFFF5F8F7)
+val Ink = Color(0xFF18332F)
 
 // Warna level: kontras tinggi, selalu berpasangan dengan ikon dan kata.
 val MerahBg = Color(0xFFB3261E)
@@ -47,17 +47,17 @@ fun levelStyle(t: Tingkat) = levelStyle(
 
 private val base = Typography()
 
-// Semuanya satu tingkat lebih besar dari bawaan Material: untuk pembaca di layar kecil dan murah.
+// Readable body text, a clear heading hierarchy, and room for system font scaling.
 private val BundaTypography = Typography(
     displaySmall = base.displaySmall.copy(fontWeight = FontWeight.Bold),
-    headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Bold, fontSize = 30.sp),
-    headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.Bold, fontSize = 26.sp),
-    titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Bold, fontSize = 24.sp),
-    titleMedium = base.titleMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 20.sp),
-    bodyLarge = base.bodyLarge.copy(fontSize = 19.sp, lineHeight = 27.sp),
-    bodyMedium = base.bodyMedium.copy(fontSize = 17.sp, lineHeight = 24.sp),
-    bodySmall = base.bodySmall.copy(fontSize = 15.sp, lineHeight = 21.sp),
-    labelLarge = TextStyle(fontSize = 19.sp, fontWeight = FontWeight.Bold),
+    headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Bold, fontSize = 30.sp, lineHeight = 38.sp),
+    headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.Bold, fontSize = 26.sp, lineHeight = 34.sp),
+    titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 30.sp),
+    titleMedium = base.titleMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 18.sp, lineHeight = 26.sp),
+    bodyLarge = base.bodyLarge.copy(fontSize = 18.sp, lineHeight = 27.sp),
+    bodyMedium = base.bodyMedium.copy(fontSize = 16.sp, lineHeight = 24.sp),
+    bodySmall = base.bodySmall.copy(fontSize = 14.sp, lineHeight = 21.sp),
+    labelLarge = TextStyle(fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
 )
 
 @Composable
@@ -74,8 +74,12 @@ fun BundaTheme(content: @Composable () -> Unit) {
             onBackground = Ink,
             surface = Color.White,
             onSurface = Ink,
-            surfaceVariant = Color(0xFFEFE7DA),
-            onSurfaceVariant = Color(0xFF4A4A4A),
+            surfaceVariant = Color(0xFFE9F0ED),
+            onSurfaceVariant = Color(0xFF50655F),
+            outline = Color(0xFF748780),
+            outlineVariant = Color(0xFFD8E4DE),
+            secondaryContainer = Color(0xFFFFEDE7),
+            onSecondaryContainer = Color(0xFF79372F),
             error = MerahBg,
         ),
         typography = BundaTypography,

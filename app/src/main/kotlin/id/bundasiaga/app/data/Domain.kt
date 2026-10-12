@@ -55,7 +55,7 @@ object ReferralMapper {
 
     fun patientCode(initials: String, number: Int): String {
         val i = initials.uppercase().filter { it in 'A'..'Z' }.take(3).padEnd(2, 'X')
-        return "%s%02d".format(i, number.coerceIn(0, 999))
+        return i + number.coerceIn(0, 999).toString().padStart(2, '0')
     }
 
     fun lokasiCode(text: String): String =

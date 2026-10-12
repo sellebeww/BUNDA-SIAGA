@@ -29,25 +29,25 @@ object Dashboard {
     val fmt: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM HH:mm").withZone(ZoneId.systemDefault())
 
     private val CSS = """
-:root{--teal:#1f6f6b;--teal-d:#0f4c4a;--coral:#e0625a;--cream:#f8f1e7;--ink:#1b1b1b;--muted:#5b5b5b;--card:#fff;--line:#e4dccf;
+:root{--teal:#1f6f6b;--teal-d:#0f4c4a;--coral:#e0625a;--cream:#f5f8f7;--ink:#18332f;--muted:#50655f;--card:#fff;--line:#d8e4de;
 --merah:#b3261e;--kuning:#ffc928;--hijau:#1b7f3b}
 @media (prefers-color-scheme:dark){:root{--cream:#141817;--ink:#ecebe7;--muted:#a9a9a3;--card:#1e2422;--line:#2e3633}}
 *{box-sizing:border-box}body{margin:0;font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--cream);color:var(--ink)}
-header{background:var(--teal-d);color:#fff;padding:14px 16px}header h1{margin:0;font-size:20px}header p{margin:2px 0 0;opacity:.85;font-size:14px}
-main{max-width:1100px;margin:0 auto;padding:16px}
+header{background:linear-gradient(120deg,#0f4c4a,#246c61);color:#fff;padding:32px max(20px,calc((100vw - 1200px)/2))}header h1{margin:0 0 8px;font-size:clamp(22px,3vw,32px);letter-spacing:-.6px}header p{margin:2px 0 0;opacity:.85;font-size:14px}
+main{max-width:1240px;margin:0 auto;padding:28px 20px 48px}
 .warn{background:#fff4e0;color:#5d3a00;border:1px solid #b26a00;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:14px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
-.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
-.tile b{display:block;font-size:28px}.tile span{color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:28px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 4px 20px #102f2610}
+.tile b{display:block;font-size:34px;letter-spacing:-1px;margin-bottom:8px}.tile span{color:var(--muted);font-size:14px}
 .lv{display:inline-block;padding:2px 8px;border-radius:6px;font-weight:700;font-size:13px}
 .lv.MERAH{background:var(--merah);color:#fff}.lv.KUNING{background:var(--kuning);color:#1b1b1b}.lv.HIJAU{background:var(--hijau);color:#fff}.lv.X{background:#546e7a;color:#fff}
 table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}
+th,td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}
 th{background:rgba(31,111,107,.1)}tr.open td:first-child{border-left:4px solid var(--coral)}
-.scroll{overflow-x:auto}h2{font-size:17px;margin:20px 0 8px}.muted{color:var(--muted);font-size:13px}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:16px}h2{font-size:20px;margin:28px 0 12px}tbody tr:hover{background:rgba(31,111,107,.04)}:focus-visible{outline:3px solid var(--coral);outline-offset:3px}.muted{color:var(--muted);font-size:13px}
 a{color:inherit}header a{color:#fff}
-.lv.NIFAS{background:#6a1b9a;color:#fff}form{display:inline}input[type=text]{padding:6px;border:1px solid var(--line);border-radius:6px;font:inherit;max-width:180px}
-button{padding:6px 10px;border-radius:6px;border:1px solid var(--teal);background:var(--teal);color:#fff;font:inherit;cursor:pointer}
+.lv.NIFAS{background:#6a1b9a;color:#fff}form{display:inline}input[type=text]{min-height:44px;padding:10px;border:1px solid var(--line);border-radius:6px;font:inherit;max-width:180px}
+button{min-height:44px;padding:10px 14px;border-radius:6px;border:1px solid var(--teal);background:var(--teal);color:#fff;font:inherit;cursor:pointer}
 .msg{background:#e8f5e9;color:#1b5e20;border:1px solid #1b7f3b;border-radius:10px;padding:10px 12px;margin-bottom:14px}
 pre{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px}
 """
@@ -59,7 +59,7 @@ pre{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);bor
 
     fun summary(rows: List<CaseRow>): Summary {
         val acked = rows.filter { it.c.ackAt != null }
-        val mins = acked.map { (it.c.ackAt!! - it.c.receivedAt) / 60_000.0 }.sorted()
+        val mins = acked.map { (it.c.ackAt!! - it.c.receivedAt) / 60_000.0 }.filter { it >= 0 }.sorted()
         return Summary(
             total = rows.size,
             perLevel = listOf("MERAH", "KUNING", "HIJAU").associateWith { lv -> rows.count { it.c.tingkat == lv } } +
@@ -106,7 +106,7 @@ pre{white-space:pre-wrap;background:var(--card);border:1px solid var(--line);bor
             if (sorted.isEmpty()) append("<tr><td colspan=9>Belum ada data.</td></tr>")
             for (r in sorted) {
                 val c = r.c
-                val lv = c.tingkat ?: "X"
+                val lv = c.tingkat?.takeIf { it in setOf("MERAH", "KUNING", "HIJAU") } ?: "X"
                 append("<tr class=\"${if (c.ackAt == null) "open" else ""}\">")
                 append("<td><span class=\"lv $lv\">${esc(c.tingkat ?: "TAK TERBACA")}</span>${if (!c.checksumVerified && !c.unparsed) "<br><span class=muted>tanpa checksum</span>" else ""}</td>")
                 val age = if (c.fase == "NIFAS") "<span class=\"lv NIFAS\">NIFAS</span> hari ke-${c.hariNifas ?: "?"}" else (c.usiaMinggu?.let { "$it mg" } ?: "–")

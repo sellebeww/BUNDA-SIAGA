@@ -40,6 +40,7 @@ data class ExamEntity(
     val firedRules: String,
     val rulesVersion: String,
     val outboxId: Long? = null,
+    val resultJson: String? = null,
 )
 
 @Entity(tableName = "outbox", indices = [Index("msgId"), Index("state")])
@@ -139,11 +140,48 @@ data class MetricEntity(
     val detail: String?,
 )
 
+@Entity(tableName = "exam_session")
+data class ExamSessionEntity(
+    @PrimaryKey val id: Int = 1,
+    val inputJson: String,
+    val initials: String,
+    val questionIndex: Int,
+    val rulesVersion: String,
+    val updatedAt: Long,
+)
+
+@Entity(tableName = "facility")
+data class FacilityEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val kind: String,
+    val phone: String,
+    val travelMinutes: Int?,
+    val updatedAt: Long,
+)
+
+@Dao
+interface FacilityDao {
+    @Query("SELECT phone FROM facility") fun phoneNumbers(): List<String>
+    @Query("SELECT * FROM facility ORDER BY name COLLATE NOCASE") fun observeAll(): Flow<List<FacilityEntity>>
+    @Query("SELECT * FROM facility") suspend fun all(): List<FacilityEntity>
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE) suspend fun save(value: FacilityEntity)
+    @Query("DELETE FROM facility WHERE id = :id") suspend fun delete(id: String)
+}
+
+@Dao
+interface ExamSessionDao {
+    @Query("SELECT * FROM exam_session WHERE id = 1") fun observe(): Flow<ExamSessionEntity?>
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE) suspend fun save(value: ExamSessionEntity)
+    @Query("DELETE FROM exam_session") suspend fun clear()
+}
+
 @Dao
 interface ExamDao {
     @Insert suspend fun insert(e: ExamEntity): Long
     @Query("UPDATE exam SET outboxId = :outboxId WHERE id = :id") suspend fun linkOutbox(id: Long, outboxId: Long)
     @Query("SELECT * FROM exam WHERE id = :id") suspend fun get(id: Long): ExamEntity?
+    @Query("SELECT * FROM exam ORDER BY createdAt DESC") fun observeAll(): Flow<List<ExamEntity>>
     @Query("SELECT COUNT(*) FROM exam") suspend fun count(): Int
 }
 
@@ -156,7 +194,9 @@ interface OutboxDao {
     @Query("SELECT * FROM outbox WHERE msgId = :msgId") suspend fun byMsgId(msgId: String): List<OutboxEntity>
     @Query("SELECT * FROM outbox WHERE state IN ('QUEUED','SENDING','FAILED_RETRYING')") suspend fun active(): List<OutboxEntity>
     @Query("SELECT COUNT(*) FROM outbox WHERE state IN ('QUEUED','SENDING','FAILED_RETRYING')") fun observeActiveCount(): Flow<Int>
-    @Query("SELECT * FROM outbox WHERE kind = 'REFERRAL' AND state != 'DRAFT' ORDER BY createdAt DESC LIMIT 50")
+    @Query("SELECT COUNT(*) FROM outbox WHERE kind = 'REFERRAL' AND state IN ('QUEUED','SENDING','FAILED_RETRYING')")
+    fun observePendingReferralCount(): Flow<Int>
+    @Query("SELECT * FROM outbox WHERE kind = 'REFERRAL' ORDER BY createdAt DESC LIMIT 50")
     fun observeReferrals(): Flow<List<OutboxEntity>>
     @Query("SELECT * FROM outbox WHERE kind = 'CAPACITY' ORDER BY createdAt DESC LIMIT 60")
     fun observeCapacityBroadcasts(): Flow<List<OutboxEntity>>
@@ -195,7 +235,12 @@ interface CaseDao {
     @Query("SELECT DISTINCT sender FROM incoming_case WHERE parseError IS NULL") suspend fun senders(): List<String>
     @Query("SELECT * FROM incoming_case WHERE syncedAt IS NULL OR syncedAt < MAX(receivedAt, IFNULL(ackAt, 0))")
     suspend fun unsynced(): List<CaseEntity>
-    @Query("UPDATE incoming_case SET syncedAt = :at WHERE id = :id") suspend fun markSynced(id: Long, at: Long)
+    @Query("UPDATE incoming_case SET syncedAt = :at WHERE id = :id AND ackAt IS :ackAt AND ackStatus IS :ackStatus AND duplicates = :duplicates")
+    suspend fun markSynced(id: Long, at: Long, ackAt: Long?, ackStatus: AckStatus?, duplicates: Int)
+    @Query("UPDATE incoming_case SET duplicates = :duplicates, syncedAt = NULL WHERE id = :id")
+    suspend fun updateDuplicates(id: Long, duplicates: Int)
+    @Query("UPDATE incoming_case SET ackStatus = :status, ackAt = :at, ackOutboxId = :outboxId, syncedAt = NULL WHERE id = :id")
+    suspend fun recordAck(id: Long, status: AckStatus, at: Long, outboxId: Long?)
 }
 
 @Dao
@@ -208,14 +253,16 @@ interface MetricDao {
 @Database(
     entities = [
         ExamEntity::class, OutboxEntity::class, CaseEntity::class, MetricEntity::class,
-        CapacityEntity::class, RecipientEntity::class,
+        CapacityEntity::class, RecipientEntity::class, ExamSessionEntity::class, FacilityEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
     // v2: kolom NIFAS pada incoming_case, tabel kapasitas dan penerima. Hanya penambahan.
-    autoMigrations = [AutoMigration(from = 1, to = 2)],
+    autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)],
 )
 abstract class BundaDb : RoomDatabase() {
+    abstract fun sessions(): ExamSessionDao
+    abstract fun facilities(): FacilityDao
     abstract fun exams(): ExamDao
     abstract fun outbox(): OutboxDao
     abstract fun cases(): CaseDao
@@ -257,8 +304,7 @@ class RoomInboxStore(private val dao: CaseDao) : InboxStore {
     override suspend fun find(senderKey: String, msgId: String) = dao.find(senderKey, msgId)?.toModel()
     override suspend fun insert(c: IncomingCase) = dao.insert(c.toEntity())
     override suspend fun update(c: IncomingCase) {
-        val existing = dao.get(c.id) ?: return
-        dao.update(existing.copy(duplicates = c.duplicates))
+        dao.updateDuplicates(c.id, c.duplicates)
     }
 
     private fun CaseEntity.toModel() = IncomingCase(

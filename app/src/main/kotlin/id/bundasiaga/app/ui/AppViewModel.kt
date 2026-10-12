@@ -1,6 +1,10 @@
 package id.bundasiaga.app.ui
 
 import android.app.Application
+import androidx.room.withTransaction
+import id.bundasiaga.app.data.ExamSessionEntity
+import id.bundasiaga.app.data.ExamSnapshot
+import id.bundasiaga.rules.Level
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -24,6 +28,9 @@ import id.bundasiaga.codec.Encoder
 import id.bundasiaga.codec.Kapasitas
 import id.bundasiaga.codec.StatusKapasitas
 import id.bundasiaga.outbox.CapacityUpdate
+import id.bundasiaga.outbox.OutMessage
+import id.bundasiaga.app.data.InputValidation
+import id.bundasiaga.outbox.OutState
 import id.bundasiaga.outbox.OutKind
 import id.bundasiaga.outbox.normalizePhone
 import id.bundasiaga.rules.Fase
@@ -37,12 +44,15 @@ import id.bundasiaga.rules.SubPerdarahan
 import id.bundasiaga.rules.Tanda
 import id.bundasiaga.rules.TdStatus
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.security.SecureRandom
 
 sealed interface Screen {
     data object Setup : Screen
+    data object History : Screen
     data object Home : Screen
     data object ExamIntro : Screen
     data class Question(val index: Int) : Screen
@@ -73,9 +83,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     var settingsVersion by mutableIntStateOf(0)
         private set
 
-    fun go(s: Screen) { stack.add(s) }
+    fun go(s: Screen) { if (current != s) stack.add(s) }
 
     fun back(): Boolean {
+        if (examBusy) return true
         if (stack.size <= 1) return false
         stack.removeAt(stack.lastIndex)
         return true
@@ -108,10 +119,24 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
      */
     var examEngine by mutableStateOf<RuleEngine?>(null)
         private set
+    var resultCreatedAt by mutableStateOf<Long?>(null)
+        private set
     private var examId: Long? = null
+    var examBusy by mutableStateOf(false)
+        private set
+    var examError by mutableStateOf<String?>(null)
+        private set
+    private val draftMutex = Mutex()
+    var draftBusy by mutableStateOf(false)
+        private set
+    var draftFailed by mutableStateOf(false)
+        private set
     private var draftOutboxId: Long? = null
 
     fun startExam(fase: Fase) {
+        if (draftBusy || examBusy) return
+        draftFailed = false
+        examError = null
         examEngine = app.rules.engine(fase)
         exam = Pemeriksaan(
             fase = fase,
@@ -128,6 +153,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     /** [age] adalah usia kehamilan (minggu) untuk HAMIL, hari sejak melahirkan untuk NIFAS. */
     fun setIntro(initials: String, age: Int?, tdStatus: TdStatus, sys: Int?, dia: Int?) {
+        if (examBusy) return
         val engine = examEngine ?: return
         val nifas = exam.fase == Fase.NIFAS
         patientInitials = initials
@@ -141,10 +167,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         questions = engine.questionsFor(exam.usiaKehamilanMinggu)
         // Pertanyaan yang tidak berlaku lagi (mis. usia berubah) tidak boleh menyimpan jawaban lama.
         if (questions.none { it.code == "GJN" }) exam = exam.copy(gerakJanin = GerakJanin.BELUM)
-        stack.add(Screen.Question(0))
+        saveProgress(0)
     }
 
     fun answer(index: Int, code: String, j: Jawaban, sub: SubPerdarahan? = null) {
+        if (examBusy || current != Screen.Question(index)) return
         val t = Tanda.valueOf(code)
         exam = exam.copy(
             jawaban = exam.jawaban + (t to j),
@@ -154,138 +181,283 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun answerFetal(index: Int, g: GerakJanin) {
+        if (examBusy || current != Screen.Question(index)) return
         exam = exam.copy(gerakJanin = g)
         next(index)
     }
 
     private fun next(index: Int) {
-        if (index + 1 < questions.size) {
-            go(Screen.Question(index + 1))
-        } else {
-            finishExam()
+        if (index + 1 < questions.size) saveProgress(index + 1) else finishExam()
+    }
+
+    private fun saveProgress(index: Int) {
+        if (examBusy) return
+        examBusy = true
+        examError = null
+        val session = ExamSessionEntity(inputJson = ExamSnapshot.encode(exam),
+            initials = ReferralMapper.initials(patientInitials), questionIndex = index,
+            rulesVersion = "${examEngine!!.config.version}:${examEngine!!.config.seq}", updatedAt = app.clock.now())
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) { app.db.sessions().save(session) }
+                go(Screen.Question(index))
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e
+            } catch (_: Exception) {
+                examError = "Jawaban belum tersimpan. Periksa ruang penyimpanan lalu pilih jawaban kembali."
+            } finally { examBusy = false }
+        }
+    }
+
+    fun resumeExam(session: ExamSessionEntity) {
+        if (examBusy || draftBusy) return
+        try {
+            val input = ExamSnapshot.decode(session.inputJson)
+            val engine = app.rules.engine(input.fase)
+            check("${engine.config.version}:${engine.config.seq}" == session.rulesVersion) {
+                "Aturan telah diperbarui. Mulai pemeriksaan baru agar semua jawaban memakai aturan yang sama."
+            }
+            exam = input
+            examEngine = engine
+            patientInitials = session.initials
+            patientCode = ""
+            hasil = null
+            examId = null
+            draftOutboxId = null
+            questions = engine.questionsFor(input.usiaKehamilanMinggu)
+            require(session.questionIndex in questions.indices)
+            examError = null
+            resetTo(Screen.Home)
+            go(Screen.ExamIntro)
+            // Rebuild the back stack so previously answered questions remain editable.
+            (0..session.questionIndex).forEach { go(Screen.Question(it)) }
+        } catch (_: Exception) {
+            examError = "Pemeriksaan tersimpan tidak cocok dengan aturan aktif atau tidak dapat dibaca. Mulai pemeriksaan baru."
         }
     }
 
     private fun finishExam() {
+        if (examBusy) return
         val h = (examEngine ?: return).evaluate(exam)
-        hasil = h
+        examBusy = true
+        examError = null
         if (patientCode.isBlank()) {
             patientCode = ReferralMapper.patientCode(ReferralMapper.initials(patientInitials), app.settings.nextPatientNumber())
         }
-        val snapshot = exam
-        viewModelScope.launch(Dispatchers.IO) {
-            examId = app.db.exams().insert(
-                ExamEntity(
-                    createdAt = app.clock.now(), patientCode = patientCode,
-                    inputJson = ReferralMapper.toJson(snapshot), level = h.level.name,
-                    firedRules = h.aturanTerpicu.joinToString(",") { it.id }, rulesVersion = h.versiAturan,
-                ),
-            )
-            app.metric("result_shown", examId, h.level.name)
+        val record = ExamEntity(createdAt = app.clock.now(), patientCode = patientCode,
+            inputJson = ExamSnapshot.encode(exam), level = h.level.name,
+            firedRules = h.aturanTerpicu.joinToString(",") { it.id }, rulesVersion = h.versiAturan,
+            resultJson = ExamSnapshot.encodeResult(h))
+        viewModelScope.launch {
+            try {
+                examId = withContext(Dispatchers.IO) {
+                    app.db.withTransaction {
+                        val id = app.db.exams().insert(record)
+                        app.db.sessions().clear()
+                        id
+                    }
+                }
+                resultCreatedAt = record.createdAt
+                hasil = h
+                app.metric("result_shown", examId, h.level.name)
+                stack.removeAll { it is Screen.Question || it is Screen.ExamIntro }
+                go(Screen.Result)
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e
+            } catch (_: Exception) {
+                examError = "Hasil belum tersimpan. Periksa ruang penyimpanan lalu pilih jawaban terakhir kembali."
+            } finally { examBusy = false }
         }
-        // Hasil menggantikan layar pertanyaan sehingga "kembali" dari hasil menuju beranda.
-        stack.removeAll { it is Screen.Question || it is Screen.ExamIntro }
-        go(Screen.Result)
+    }
+
+    fun openExam(record: ExamEntity) {
+        if (draftBusy || examBusy) return
+        try {
+            val input = ExamSnapshot.decode(record.inputJson)
+            val saved = record.resultJson?.let(ExamSnapshot::decodeResult) ?: Hasil(
+                Level.valueOf(record.level), emptyList(), emptyList(),
+                listOf("Aturan terpicu" to record.firedRules.ifBlank { "Tidak ada" }), emptyList(),
+                listOf("Hasil dari versi aplikasi sebelumnya. Rincian saran tidak tersimpan; lakukan pemeriksaan baru untuk kondisi terkini."),
+                record.rulesVersion, "Arsip",
+            )
+            exam = input
+            examEngine = app.rules.engine(input.fase)
+            hasil = saved
+            resultCreatedAt = record.createdAt
+            patientCode = record.patientCode
+            examId = record.id
+            draftOutboxId = record.outboxId
+            draftFailed = false
+            examError = null
+            go(Screen.Result)
+        } catch (_: Exception) { examError = "Arsip pemeriksaan tidak dapat dibaca." }
     }
 
     /** Membuat (sekali saja) draf SMS untuk hasil saat ini dan mengembalikan id outbox-nya. */
-    suspend fun ensureDraft(): Long = withContext(Dispatchers.IO) {
-        draftOutboxId?.let { return@withContext it }
-        val h = hasil ?: error("belum ada hasil")
-        val msgId = Encoder.newMsgId { random.nextInt(it) }
-        val r = ReferralMapper.build(exam, h.level, msgId, patientCode, app.settings.lokasi, app.clock.now())
-        val body = Encoder.encode(r)
-        val id = app.outbox.createDraft(OutKind.REFERRAL, msgId, app.settings.destinationNumber, body, examId)
-        examId?.let { app.db.exams().linkOutbox(it, id) }
-        draftOutboxId = id
-        id
-    }
-
-    fun openConfirm() = viewModelScope.launch { go(Screen.Confirm(ensureDraft())) }
-
-    fun openScript() = viewModelScope.launch { go(Screen.Script(ensureDraft())) }
-
-    fun sendQueued(outboxId: Long, activity: android.content.Context) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                // Tujuan bisa saja baru diisi di Pengaturan setelah draf dibuat.
-                val draft = app.db.outbox().get(outboxId)
-                val dest = app.settings.destinationNumber
-                if (draft != null && draft.destination.isBlank() && dest.isNotBlank()) {
-                    app.db.outbox().update(draft.copy(destination = dest))
-                }
-                app.outbox.queue(outboxId)
+    suspend fun ensureDraft(): Long = draftMutex.withLock {
+        withContext(Dispatchers.IO) {
+            draftOutboxId?.let { return@withContext it }
+            checkNotNull(examId) { "hasil belum tersimpan" }
+            val h = hasil ?: error("belum ada hasil")
+            val msgId = Encoder.newMsgId { random.nextInt(it) }
+            val r = ReferralMapper.build(exam, h.level, msgId, patientCode, app.settings.lokasi, resultCreatedAt ?: app.clock.now())
+            val body = Encoder.encode(r)
+            val savedId = app.db.withTransaction {
+                // Insert new rows directly in this transaction; never acquire the outbox
+                // engine mutex while holding a Room transaction (the runner locks in reverse order).
+                val id = app.db.outbox().insert(OutMessage(kind = OutKind.REFERRAL, msgId = msgId,
+                    destination = app.settings.destinationNumber, body = body, refId = examId,
+                    state = OutState.DRAFT, createdAt = app.clock.now()).toEntity())
+                app.db.exams().linkOutbox(examId!!, id)
+                id
             }
-            app.metric("send_attempt", outboxId)
-            app.runner.startForegroundRetry(activity)
-            stack.removeAll { it is Screen.Confirm }
-            go(Screen.Status(outboxId))
+            draftOutboxId = savedId
+            savedId
         }
     }
 
-    fun retryNow(outboxId: Long, activity: android.content.Context) {
+    fun openConfirm() = openDraft { Screen.Confirm(it) }
+
+    fun openScript() = openDraft { Screen.Script(it) }
+
+    private fun openDraft(screen: (Long) -> Screen) {
+        if (draftBusy) return
+        draftBusy = true
+        draftFailed = false
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { app.outbox.retryNow(outboxId) }
-            app.runner.startForegroundRetry(activity)
+            try {
+                val id = ensureDraft()
+                if (current == Screen.Result) {
+                    val state = withContext(Dispatchers.IO) { app.db.outbox().get(id)?.state }
+                    go(if (screen(id) is Screen.Confirm && state != OutState.DRAFT) Screen.Status(id) else screen(id))
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                draftFailed = true
+            } finally {
+                draftBusy = false
+            }
         }
+    }
+
+    var actionBusy by mutableStateOf(false)
+        private set
+    var actionError by mutableStateOf<String?>(null)
+        private set
+
+    private fun action(block: suspend () -> Unit) {
+        if (actionBusy) return
+        actionBusy = true
+        actionError = null
+        viewModelScope.launch {
+            try { block() }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) { actionError = "Perubahan belum berhasil. Periksa riwayat pesan sebelum mencoba kembali." }
+            finally { actionBusy = false }
+        }
+    }
+
+    fun sendQueued(outboxId: Long, activity: android.content.Context) = action {
+        withContext(Dispatchers.IO) {
+            checkNotNull(app.outbox.queue(outboxId, app.settings.destinationNumber))
+        }
+        app.metric("send_attempt", outboxId)
+        app.runner.startForegroundRetry(activity)
+        stack.removeAll { it is Screen.Confirm }
+        go(Screen.Status(outboxId))
+    }
+
+    fun retryNow(outboxId: Long, activity: android.content.Context) = action {
+        withContext(Dispatchers.IO) { app.outbox.retryNow(outboxId) }
+        app.runner.startForegroundRetry(activity)
     }
 
     // ---- sisi penerima ------------------------------------------------------------
 
-    fun sendAck(case: CaseEntity, status: AckStatus, activity: android.content.Context) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                val now = app.clock.now()
-                if (case.sender == SIMULATED_SENDER) {
-                    // Tidak ada yang bisa dikirimi SMS balik: catat pilihan hanya di HP.
-                    app.db.cases().update(case.copy(ackStatus = status, ackAt = now))
-                    return@withContext
+    fun sendAck(case: CaseEntity, status: AckStatus, activity: android.content.Context) = action {
+        require(case.sender != SIMULATED_SENDER)
+        withContext(Dispatchers.IO) {
+            app.db.withTransaction {
+                val latest = checkNotNull(app.db.cases().get(case.id))
+                // Repeated taps must not enqueue another identical reply.
+                if (latest.ackStatus == status && latest.ackOutboxId != null) {
+                    val existing = app.db.outbox().get(latest.ackOutboxId)
+                    if (existing != null && existing.state != OutState.EXPIRED) return@withTransaction
                 }
+                val now = app.clock.now()
                 val body = Encoder.encode(Ack(case.msgId, status, ReferralMapper.waktu(now)))
-                val id = app.outbox.enqueue(OutKind.ACK, case.msgId, case.sender, body, case.id)
-                app.db.cases().update(case.copy(ackStatus = status, ackOutboxId = id, ackAt = now))
-                app.metric("ack_sent", case.id, status.name)
+                val id = app.db.outbox().insert(OutMessage(kind = OutKind.ACK, msgId = case.msgId,
+                    destination = case.sender, body = body, refId = case.id, state = OutState.QUEUED,
+                    createdAt = now, queuedAt = now, nextAttemptAt = now,
+                    expiresAt = now + app.currentPolicy().expireAfterMs).toEntity())
+                app.db.cases().recordAck(case.id, status, now, id)
             }
-            app.runner.startForegroundRetry(activity)
-            if (app.settings.role == Role.PUSKESMAS) SyncWorker.schedule(app)
+            app.metric("ack_queued", case.id, status.name)
         }
+        app.runner.startForegroundRetry(activity)
+        if (app.settings.role == Role.PUSKESMAS) SyncWorker.schedule(app)
     }
 
     // ---- siaran kapasitas (PUSKESMAS) ---------------------------------------------
 
     fun addRecipient(number: String, label: String) {
         val key = normalizePhone(number)
-        if (key.length < 5) return
-        viewModelScope.launch(Dispatchers.IO) {
+        if (!InputValidation.phone(number)) return
+        action { withContext(Dispatchers.IO) {
             app.db.recipients().insert(RecipientEntity(number = number.trim(), numberKey = key, label = label.trim(), addedAt = app.clock.now()))
-        }
+        } }
     }
 
     fun deleteRecipient(id: Long) {
-        viewModelScope.launch(Dispatchers.IO) { app.db.recipients().delete(id) }
+        action { withContext(Dispatchers.IO) { app.db.recipients().delete(id) } }
     }
 
     /** Menambahkan setiap nomor yang pernah mengirim rujukan terbaca ke HP ini (mereka kader/bidan di wilayah itu). */
     fun importRecipientsFromCases() {
-        viewModelScope.launch(Dispatchers.IO) {
+        action { withContext(Dispatchers.IO) {
             val now = app.clock.now()
-            app.db.cases().senders().filter { it != SIMULATED_SENDER && normalizePhone(it).length >= 5 }.forEach {
-                app.db.recipients().insert(RecipientEntity(number = it, numberKey = normalizePhone(it), label = "", addedAt = now))
+            app.db.withTransaction {
+                app.db.cases().senders().filter { it != SIMULATED_SENDER && InputValidation.phone(it) }.forEach {
+                    app.db.recipients().insert(RecipientEntity(number = it, numberKey = normalizePhone(it), label = "", addedAt = now))
+                }
             }
-        }
+        } }
     }
 
-    /** Menyimpan status di HP ini dan mengantrekan satu SMS per penerima (masing-masing dicoba ulang seperti rujukan). */
-    fun sendCapacity(faskesId: String, status: StatusKapasitas, beds: Int?, recipients: List<RecipientEntity>, activity: android.content.Context) {
+    var capacityBusy by mutableStateOf(false)
+        private set
+    var capacityFailed by mutableStateOf(false)
+        private set
+
+    /** Reports success only after all recipient messages have been persisted. */
+    fun sendCapacity(faskesId: String, status: StatusKapasitas, beds: Int?, recipients: List<RecipientEntity>, activity: android.content.Context, onQueued: () -> Unit) {
+        if (capacityBusy) return
+        capacityBusy = true
+        capacityFailed = false
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                val now = app.clock.now()
-                val body = Encoder.encode(Kapasitas(faskesId, status, beds, ReferralMapper.waktu(now)))
-                app.db.capacity().upsert(CapacityUpdate(faskesId, status, beds, now, now, LOCAL_SENDER, true).toEntity())
-                recipients.forEach { app.outbox.enqueue(OutKind.CAPACITY, faskesId, it.number, body) }
-                app.metric("capacity_broadcast", null, "$faskesId ${status.name} n=${recipients.size}")
+            try {
+                withContext(Dispatchers.IO) {
+                    val now = app.clock.now()
+                    val body = Encoder.encode(Kapasitas(faskesId, status, beds, ReferralMapper.waktu(now)))
+                    app.db.withTransaction {
+                        app.db.capacity().upsert(CapacityUpdate(faskesId, status, beds, now, now, LOCAL_SENDER, true).toEntity())
+                        recipients.forEach { recipient ->
+                            app.db.outbox().insert(OutMessage(kind = OutKind.CAPACITY, msgId = faskesId,
+                                destination = recipient.number, body = body, state = OutState.QUEUED,
+                                createdAt = now, queuedAt = now, nextAttemptAt = now,
+                                expiresAt = now + app.currentPolicy().expireAfterMs).toEntity())
+                        }
+                    }
+                    app.metric("capacity_broadcast", null, "$faskesId ${status.name} n=${recipients.size}")
+                }
+                if (recipients.isNotEmpty()) app.runner.startForegroundRetry(activity)
+                onQueued()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                capacityFailed = true
+            } finally {
+                capacityBusy = false
             }
-            if (recipients.isNotEmpty()) app.runner.startForegroundRetry(activity)
         }
     }
 
@@ -302,9 +474,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         if (rulesBusy) return
         rulesBusy = true
         viewModelScope.launch {
-            rulesCheck = withContext(Dispatchers.IO) { RulesUpdater.checkServer(app) }
-            rulesBusy = false
-            settingsVersion++
+            try {
+                rulesCheck = withContext(Dispatchers.IO) { RulesUpdater.checkServer(app) }
+                settingsVersion++
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) { actionError = "Pembaruan aturan belum berhasil. Periksa koneksi dan alamat server." }
+            finally { rulesBusy = false }
         }
     }
 
@@ -315,7 +490,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             rulesImport = withContext(Dispatchers.IO) {
                 runCatching {
-                    val bytes = app.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    val bytes = app.contentResolver.openInputStream(uri)?.use { input ->
+                        val buffer = java.io.ByteArrayOutputStream()
+                        val chunk = ByteArray(8192)
+                        while (buffer.size() <= 512 * 1024) {
+                            val count = input.read(chunk, 0, minOf(chunk.size, 512 * 1024 + 1 - buffer.size()))
+                            if (count < 0) break
+                            buffer.write(chunk, 0, count)
+                        }
+                        buffer.toByteArray()
+                    }
                         ?: return@runCatching RulesRepository.InstallResult.Rejected("berkas tidak bisa dibaca")
                     if (bytes.size > 512 * 1024) RulesRepository.InstallResult.Rejected("berkas terlalu besar")
                     else app.rules.install(String(bytes, Charsets.UTF_8), "file")
@@ -327,20 +511,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Khusus demo: menyuntikkan rujukan simulasi berlabel jelas ke kotak masuk HP ini. */
-    fun injectSimulatedReferral() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val msgId = Encoder.newMsgId { random.nextInt(it) }
-            val r = ReferralMapper.build(
-                Pemeriksaan(
-                    usiaKehamilanMinggu = 34, tdStatus = TdStatus.TERUKUR, tdSistolik = 168, tdDiastolik = 112,
-                    jawaban = mapOf(Tanda.SKH to Jawaban.YA, Tanda.BKK to Jawaban.YA),
-                ),
-                id.bundasiaga.rules.Level.MERAH, msgId, "YL07", "SIM01", app.clock.now(),
-            )
-            id.bundasiaga.app.sms.SmsReceiver.handle(app, SIMULATED_SENDER, Encoder.encode(r))
-        }
-    }
+
 }
 
 const val SIMULATED_SENDER = "SIMULASI"

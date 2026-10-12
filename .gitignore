@@ -22,3 +22,4 @@ server/data/
 keystore.properties
 # Rules signing private keys (see docs/RULES_UPDATE.md)
 rules-keys/
+__pycache__/

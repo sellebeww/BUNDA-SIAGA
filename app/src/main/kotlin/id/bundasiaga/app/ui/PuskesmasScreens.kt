@@ -1,6 +1,18 @@
 package id.bundasiaga.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,21 +52,43 @@ import id.bundasiaga.rules.Level
 fun InboxScreen(vm: AppViewModel) {
     val cases by vm.app.db.cases().observeAll().collectAsState(initial = emptyList())
     val isRoot = vm.stack.size == 1
+    var search by rememberSaveable { mutableStateOf("") }
+    var filter by rememberSaveable { mutableStateOf("all") }
+    val realCases = cases.filter { it.sender != SIMULATED_SENDER }
+    val visible = realCases.filter { c ->
+        (filter != "pending" || c.ackStatus == null) &&
+            (filter != "red" || c.tingkat == id.bundasiaga.codec.Tingkat.MERAH) &&
+            (search.isBlank() || listOfNotNull(c.pasien, c.lokasi).any { it.contains(search.trim(), ignoreCase = true) })
+    }
     Column(Modifier.fillMaxSize()) {
         BundaTopBar(
             stringResource(R.string.inbox_title), onBack = if (isRoot) null else ({ vm.back() }),
             actions = { if (vm.app.settings.role == Role.PUSKESMAS) OverflowMenu(vm) },
         )
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            SecondaryButton(stringResource(R.string.summary_title), onClick = { vm.go(Screen.Summary) }, icon = Icons.Filled.BarChart)
+        LazyColumn(
+            Modifier.weight(1f), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                SectionHeading(stringResource(R.string.inbox_count, realCases.size, realCases.count { it.ackStatus == null }), stringResource(R.string.inbox_sorted))
+            }
+            item {
+                OutlinedTextField(search, { search = it }, modifier = Modifier.fillMaxWidth(), singleLine = true,
+                    label = { Text(stringResource(R.string.inbox_search)) }, leadingIcon = { Icon(Icons.Filled.Search, null) })
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("all" to R.string.inbox_filter_all, "pending" to R.string.inbox_filter_pending, "red" to R.string.inbox_filter_red).forEach { (value, label) ->
+                        FilterChip(selected = filter == value, onClick = { filter = value }, label = { Text(stringResource(label)) })
+                    }
+                }
+            }
+            item { SecondaryButton(stringResource(R.string.summary_title), onClick = { vm.go(Screen.Summary) }, icon = Icons.Filled.BarChart) }
             if (vm.app.settings.role == Role.PUSKESMAS && id.bundasiaga.app.BuildConfig.SMS_DIRECT) {
-                SecondaryButton(stringResource(R.string.menu_capacity), onClick = { vm.go(Screen.CapacitySend) }, icon = Icons.Filled.LocalHospital)
+                item { SecondaryButton(stringResource(R.string.menu_capacity), onClick = { vm.go(Screen.CapacitySend) }, icon = Icons.Filled.LocalHospital) }
             }
-            Text(stringResource(R.string.inbox_sorted), style = MaterialTheme.typography.bodySmall)
-            if (cases.isEmpty()) {
-                SectionCard(null) { Text(stringResource(R.string.inbox_empty), style = MaterialTheme.typography.bodyLarge) }
+            if (visible.isEmpty()) {
+                item { EmptyState(stringResource(if (realCases.isEmpty()) R.string.inbox_empty_title else R.string.inbox_no_match),
+                    stringResource(if (realCases.isEmpty()) R.string.inbox_empty else R.string.inbox_no_match_hint), Icons.Filled.Inbox) }
             }
-            cases.forEach { c -> CaseRow(c) { vm.go(Screen.CaseDetail(c.id)) } }
+            items(visible, key = { it.id }) { c -> CaseRow(c) { vm.go(Screen.CaseDetail(c.id)) } }
         }
     }
 }
@@ -63,7 +97,7 @@ fun InboxScreen(vm: AppViewModel) {
 private fun CaseRow(c: CaseEntity, onClick: () -> Unit) {
     OutlinedCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (c.tingkat != null) LevelChip(levelOf(c.tingkat)) else MockLabel(stringResource(R.string.inbox_unparsed_chip))
+            if (c.tingkat != null) LevelChip(levelOf(c.tingkat)) else StatusLabel(stringResource(R.string.inbox_unparsed_chip))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -76,8 +110,7 @@ private fun CaseRow(c: CaseEntity, onClick: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (c.ackStatus == null) MerahBg else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (c.fase == id.bundasiaga.codec.FaseRujukan.NIFAS) MockLabel(stringResource(R.string.fase_nifas_chip))
-                if (c.sender == SIMULATED_SENDER) MockLabel(stringResource(R.string.sim_case_label))
+                if (c.fase == id.bundasiaga.codec.FaseRujukan.NIFAS) StatusLabel(stringResource(R.string.fase_nifas_chip))
             }
         }
     }
@@ -95,7 +128,6 @@ fun CaseDetailScreen(vm: AppViewModel, caseId: Long) {
     Column(Modifier.fillMaxSize()) {
         BundaTopBar(stringResource(R.string.case_title), onBack = { vm.back() })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (case.sender == SIMULATED_SENDER) MockLabel(stringResource(R.string.sim_case_label))
             if (r != null) {
                 LevelBanner(levelOf(r.tingkat))
                 Text(stringResource(R.string.case_signal_note), style = MaterialTheme.typography.bodyMedium)
@@ -123,11 +155,10 @@ fun CaseDetailScreen(vm: AppViewModel, caseId: Long) {
                     case.ackStatus?.let {
                         Text(stringResource(R.string.case_replied_with, it.label), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                         ackMsg?.let { m -> Text(stateLabel(m.state, null), style = MaterialTheme.typography.bodyMedium) }
-                        if (case.sender == SIMULATED_SENDER) Text(stringResource(R.string.sim_ack_local), style = MaterialTheme.typography.bodySmall)
                     }
-                    BigButton(stringResource(R.string.ack_ready), onClick = { vm.sendAck(case, AckStatus.SIAP, context) }, icon = Icons.Filled.CheckCircle, color = HijauBg)
-                    BigButton(stringResource(R.string.ack_full), onClick = { vm.sendAck(case, AckStatus.PENUH, context) }, icon = Icons.Filled.DoNotDisturbOn, color = MerahBg)
-                    BigButton(stringResource(R.string.ack_callback), onClick = { vm.sendAck(case, AckStatus.HUBUNGI, context) }, icon = Icons.AutoMirrored.Filled.PhoneCallback, color = Teal)
+                    BigButton(stringResource(R.string.ack_ready), enabled = !vm.actionBusy, onClick = { vm.sendAck(case, AckStatus.SIAP, context) }, icon = Icons.Filled.CheckCircle, color = HijauBg)
+                    BigButton(stringResource(R.string.ack_full), enabled = !vm.actionBusy, onClick = { vm.sendAck(case, AckStatus.PENUH, context) }, icon = Icons.Filled.DoNotDisturbOn, color = MerahBg)
+                    BigButton(stringResource(R.string.ack_callback), enabled = !vm.actionBusy, onClick = { vm.sendAck(case, AckStatus.HUBUNGI, context) }, icon = Icons.AutoMirrored.Filled.PhoneCallback, color = Teal)
                 }
             }
         }
@@ -139,7 +170,8 @@ fun SummaryScreen(vm: AppViewModel) {
     val cases by vm.app.db.cases().observeAll().collectAsState(initial = emptyList())
     val real = cases.filter { it.sender != SIMULATED_SENDER }
     val acked = real.filter { it.ackAt != null }
-    val avgAckMin = if (acked.isEmpty()) null else acked.map { (it.ackAt!! - it.receivedAt) / 60_000.0 }.average()
+    val ackMinutes = acked.map { (it.ackAt!! - it.receivedAt) / 60_000.0 }.filter { it >= 0 }
+    val avgAckMin = ackMinutes.takeIf { it.isNotEmpty() }?.average()
     Column(Modifier.fillMaxSize()) {
         BundaTopBar(stringResource(R.string.summary_title), onBack = { vm.back() })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

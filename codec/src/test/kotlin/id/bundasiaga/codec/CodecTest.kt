@@ -19,6 +19,31 @@ class CodecTest {
     )
 
     @Test
+    fun smsEncodingIsIndependentOfDeviceNumberLocale() {
+        val original = java.util.Locale.getDefault()
+        val expected = Encoder.encode(yuliana)
+        try {
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("ar-EG"))
+            assertEquals(expected, Encoder.encode(yuliana))
+            val postpartum = yuliana.copy(fase = FaseRujukan.NIFAS, usiaMinggu = null, hariNifas = 3)
+            assertEquals(postpartum, assertIs<Decoded.Referral>(Decoder.decode(Encoder.encode(postpartum))).value)
+            assertEquals("301545", yuliana.waktu.encode())
+        } finally {
+            java.util.Locale.setDefault(original)
+        }
+    }
+
+    @Test
+    fun incompleteOrOutOfRangePressureIsRejected() {
+        assertFailsWith<EncodeException> { Encoder.encode(yuliana.copy(tdDiastolik = null)) }
+        assertFailsWith<EncodeException> { Encoder.encode(yuliana.copy(tdSistolik = null)) }
+        for (td in listOf("999/112", "168/999", "39/20", "40/19")) {
+            val raw = Encoder.encode(yuliana).substringBeforeLast(';').replace("168/112", td)
+            assertEquals(ErrorKind.BAD_FIELD, assertIs<Decoded.Error>(Decoder.decode("$raw;${Bs1.ck(raw)}")).kind)
+        }
+    }
+
+    @Test
     fun specExampleShape() {
         val s = Encoder.encode(yuliana)
         // Checksum dicocokkan dengan implementasi CRC-8 Python yang independen.

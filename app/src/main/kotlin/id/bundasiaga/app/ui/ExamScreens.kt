@@ -1,6 +1,20 @@
 package id.bundasiaga.app.ui
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Shield
+import androidx.activity.compose.BackHandler
+import id.bundasiaga.outbox.OutState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -92,59 +106,107 @@ import id.bundasiaga.rules.TdStatus
 fun HomeScreen(vm: AppViewModel) {
     val s = vm.app.settings
     val referrals by vm.app.db.outbox().observeReferrals().collectAsState(initial = emptyList())
+    val pendingReferrals by vm.app.db.outbox().observePendingReferralCount().collectAsState(initial = 0)
+    val exams by vm.app.db.exams().observeAll().collectAsState(initial = emptyList())
+    val session by vm.app.db.sessions().observe().collectAsState(initial = null)
+    var pendingFase by remember { mutableStateOf<Fase?>(null) }
+    fun begin(fase: Fase) { if (session != null) pendingFase = fase else vm.startExam(fase) }
     Column(Modifier.fillMaxSize()) {
         BundaTopBar(stringResource(R.string.app_name), onBack = null, actions = { OverflowMenu(vm) })
-        Column(
-            Modifier.verticalScroll(rememberScrollState()).padding(16.dp),
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp, top = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(painterResource(R.drawable.logo), contentDescription = null, modifier = Modifier.size(72.dp))
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(stringResource(R.string.home_hello, s.userName), style = MaterialTheme.typography.titleLarge)
-                    Text(
-                        stringResource(
-                            when (s.role) {
-                                Role.BIDAN -> R.string.role_bidan
-                                Role.PUSKESMAS -> R.string.role_puskesmas
-                                else -> R.string.role_kader
-                            },
-                        ) + " · " + s.lokasi,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Image(painterResource(R.drawable.logo), contentDescription = null, modifier = Modifier.size(64.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.home_hello, s.userName), style = MaterialTheme.typography.headlineSmall)
+                        Text(stringResource(if (s.role == Role.BIDAN) R.string.role_bidan else R.string.role_kader) + " · " + s.lokasi,
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
-            BigButton(
-                stringResource(R.string.home_start_exam), onClick = { vm.startExam(Fase.HAMIL) },
-                icon = Icons.Filled.PregnantWoman, color = Coral, modifier = Modifier.heightIn(min = 96.dp),
-            )
-            BigButton(
-                stringResource(R.string.home_start_nifas), onClick = { vm.startExam(Fase.NIFAS) },
-                icon = Icons.Filled.BabyChangingStation, color = Teal, modifier = Modifier.heightIn(min = 80.dp),
-            )
-            if (s.role == Role.BIDAN && BuildConfig.SMS_DIRECT) {
-                SecondaryButton(stringResource(R.string.home_inbox), onClick = { vm.go(Screen.Inbox) }, icon = Icons.Filled.Inbox)
+            item {
+                Row(
+                    Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)).padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(Icons.Filled.Shield, null, tint = Teal, modifier = Modifier.size(20.dp))
+                    Text(stringResource(R.string.home_offline), style = MaterialTheme.typography.bodySmall, color = TealDark)
+                }
             }
-            if (s.destinationNumber.isBlank()) Disclaimer(stringResource(R.string.home_no_dest))
-
-            Text(stringResource(R.string.home_recent), style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
-            if (referrals.isEmpty()) Text(stringResource(R.string.home_recent_empty), style = MaterialTheme.typography.bodyMedium)
-            referrals.forEach { m ->
-                val r = decodeReferral(m.body)
-                OutlinedCard(onClick = { vm.go(Screen.Status(m.id)) }, modifier = Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        r?.let { LevelChip(levelOf(it.tingkat)) }
-                        Spacer(Modifier.width(12.dp))
+            item {
+                SectionCard(null, container = TealDark) {
+                    Text("Ringkasan perangkat", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                         Column(Modifier.weight(1f)) {
-                            Text("${r?.pasien ?: "-"} · ${formatTime(m.createdAt)}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-                            Text(stateLabel(m.state, m.ackStatus), style = MaterialTheme.typography.bodyMedium)
+                            Text(exams.size.toString(), color = Color.White, style = MaterialTheme.typography.headlineMedium)
+                            Text("Pemeriksaan tersimpan", color = Color(0xFFD5EAE4), style = MaterialTheme.typography.bodySmall)
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text(pendingReferrals.toString(),
+                                color = Color.White, style = MaterialTheme.typography.headlineMedium)
+                            Text("Rujukan dalam antrean", color = Color(0xFFD5EAE4), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
             }
-            Disclaimer(vm.app.rules.engine(Fase.HAMIL).config.disclaimer)
+            session?.let { saved -> item {
+                ActionCard("Lanjutkan pemeriksaan", "${saved.initials} · jawaban tersimpan ${formatTime(saved.updatedAt)}",
+                    Icons.Filled.PlayArrow, onClick = { vm.resumeExam(saved) })
+            } }
+            vm.examError?.let { message -> item { Disclaimer(message) } }
+            item { SectionHeading(stringResource(R.string.home_care_title), stringResource(R.string.home_care_subtitle)) }
+            item {
+                ActionCard(stringResource(R.string.home_start_exam), stringResource(R.string.home_hamil_desc), Icons.Filled.PregnantWoman,
+                    onClick = { begin(Fase.HAMIL) }, prominent = true)
+            }
+            item {
+                ActionCard(stringResource(R.string.home_start_nifas), stringResource(R.string.home_nifas_desc), Icons.Filled.BabyChangingStation,
+                    onClick = { begin(Fase.NIFAS) })
+            }
+            item { ActionCard("Riwayat pemeriksaan", "Cari dan buka kembali semua hasil yang tersimpan.", Icons.Filled.History, { vm.go(Screen.History) }) }
+            if (s.role == Role.BIDAN && BuildConfig.SMS_DIRECT) {
+                item { ActionCard(stringResource(R.string.home_inbox), stringResource(R.string.home_inbox_desc), Icons.Filled.Inbox, { vm.go(Screen.Inbox) }) }
+            }
+            if (s.destinationNumber.isBlank()) { item { Disclaimer(stringResource(R.string.home_no_dest)) } }
+            item {
+                SectionHeading(stringResource(R.string.home_resources))
+            }
+            item {
+                ActionCard(stringResource(R.string.menu_faskes), stringResource(R.string.home_faskes_desc), Icons.Filled.LocalHospital, { vm.go(Screen.Faskes) })
+            }
+            item {
+                ActionCard(stringResource(R.string.menu_stabilization), stringResource(R.string.home_guide_desc), Icons.Filled.HealthAndSafety, { vm.go(Screen.Stabilization(Fase.HAMIL)) })
+            }
+            item { SectionHeading(stringResource(R.string.home_recent), stringResource(R.string.home_recent_limit)) }
+            if (referrals.isEmpty()) {
+                item { EmptyState(stringResource(R.string.home_empty_title), stringResource(R.string.home_recent_empty), Icons.AutoMirrored.Filled.Send) }
+            }
+            items(referrals, key = { it.id }) { m ->
+                val r = decodeReferral(m.body)
+                OutlinedCard(onClick = { vm.go(if (m.state == OutState.DRAFT) Screen.Confirm(m.id) else Screen.Status(m.id)) }, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(r?.pasien ?: "—", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                            r?.let { LevelChip(levelOf(it.tingkat)) }
+                            Icon(Icons.Filled.ChevronRight, null, tint = Teal)
+                        }
+                        Text(formatTime(m.createdAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stateLabel(m.state, m.ackStatus), style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+            item { Disclaimer(vm.app.rules.engine(Fase.HAMIL).config.disclaimer) }
         }
+    }
+    pendingFase?.let { fase ->
+        AlertDialog(onDismissRequest = { pendingFase = null }, title = { Text("Mulai pemeriksaan baru?") },
+            text = { Text("Jawaban pemeriksaan yang belum selesai akan diganti setelah data awal pemeriksaan baru disimpan.") },
+            confirmButton = { TextButton(onClick = { pendingFase = null; vm.startExam(fase) }) { Text("Mulai baru") } },
+            dismissButton = { TextButton(onClick = { pendingFase = null }) { Text("Batal") } })
     }
 }
 
@@ -156,6 +218,7 @@ fun OverflowMenu(vm: AppViewModel) {
     }
     DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
         buildList {
+            if (vm.app.settings.role != Role.PUSKESMAS) add(R.string.history_title to Screen.History)
             add(R.string.menu_faskes to Screen.Faskes)
             if (vm.app.settings.role == Role.PUSKESMAS && BuildConfig.SMS_DIRECT) add(R.string.menu_capacity to Screen.CapacitySend)
             add(R.string.menu_stabilization to Screen.Stabilization(Fase.HAMIL))
@@ -179,7 +242,7 @@ fun ExamIntroScreen(vm: AppViewModel) {
     val nifas = e.fase == Fase.NIFAS
     var initials by rememberSaveable { mutableStateOf(vm.patientInitials) }
     var usia by rememberSaveable { mutableStateOf((if (nifas) e.hariNifas else e.usiaKehamilanMinggu)?.toString() ?: "") }
-    var usiaUnknown by rememberSaveable { mutableStateOf(false) }
+    var usiaUnknown by rememberSaveable { mutableStateOf(vm.patientInitials.isNotBlank() && (if (nifas) e.hariNifas else e.usiaKehamilanMinggu) == null) }
     var td by rememberSaveable { mutableStateOf(e.tdStatus) }
     var sys by rememberSaveable { mutableStateOf(e.tdSistolik?.toString() ?: "") }
     var dia by rememberSaveable { mutableStateOf(e.tdDiastolik?.toString() ?: "") }
@@ -192,62 +255,64 @@ fun ExamIntroScreen(vm: AppViewModel) {
     Column(Modifier.fillMaxSize()) {
         BundaTopBar(stringResource(if (nifas) R.string.intro_title_nifas else R.string.intro_title), onBack = { vm.back() })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedTextField(
-                value = initials, onValueChange = { initials = it.take(30) },
-                label = { Text(stringResource(R.string.intro_initials)) },
-                supportingText = { Text(stringResource(R.string.intro_initials_hint)) },
-                singleLine = true, modifier = Modifier.fillMaxWidth(), textStyle = MaterialTheme.typography.bodyLarge,
-            )
-            if (initials.isNotBlank()) {
-                Text(stringResource(R.string.intro_initials_preview, ReferralMapper.initials(initials)), style = MaterialTheme.typography.bodyMedium)
-            }
-
-            Text(stringResource(if (nifas) R.string.intro_hari else R.string.intro_usia), style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(
-                value = usia, onValueChange = { usia = it.filter(Char::isDigit).take(2); usiaUnknown = false },
-                label = { Text(stringResource(if (nifas) R.string.intro_hari_label else R.string.intro_usia_weeks)) },
-                supportingText = if (nifas) ({ Text(stringResource(R.string.intro_hari_hint, ReferralMapper.MAX_HARI_NIFAS)) }) else null,
-                singleLine = true, enabled = !usiaUnknown,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                isError = !usiaOk && usia.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth(), textStyle = MaterialTheme.typography.bodyLarge,
-            )
-            if (nifas && !usiaOk && usiaInt != null) {
-                Text(stringResource(R.string.intro_hari_too_late, ReferralMapper.MAX_HARI_NIFAS), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
-            }
-            ChoiceRow(stringResource(if (nifas) R.string.intro_hari_unknown else R.string.intro_usia_unknown), usiaUnknown) { usiaUnknown = !usiaUnknown; if (usiaUnknown) usia = "" }
-
-            Text(stringResource(R.string.intro_td), style = MaterialTheme.typography.titleMedium)
-            ChoiceRow(stringResource(R.string.intro_td_measured), td == TdStatus.TERUKUR) { td = TdStatus.TERUKUR }
-            if (td == TdStatus.TERUKUR) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = sys, onValueChange = { sys = it.filter(Char::isDigit).take(3) },
-                        label = { Text(stringResource(R.string.intro_sys)) }, singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f), textStyle = MaterialTheme.typography.bodyLarge,
-                    )
-                    Text("/", style = MaterialTheme.typography.headlineSmall)
-                    OutlinedTextField(
-                        value = dia, onValueChange = { dia = it.filter(Char::isDigit).take(3) },
-                        label = { Text(stringResource(R.string.intro_dia)) }, singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(1f), textStyle = MaterialTheme.typography.bodyLarge,
-                    )
-                }
-                if (!bpOk && sys.isNotEmpty() && dia.isNotEmpty()) {
-                    Text(stringResource(R.string.intro_td_implausible), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+            SectionCard(stringResource(R.string.intro_identity_section)) {
+                OutlinedTextField(
+                    value = initials, onValueChange = { initials = it.take(30) },
+                    label = { Text(stringResource(R.string.intro_initials)) },
+                    supportingText = { Text(stringResource(R.string.intro_initials_hint)) },
+                    singleLine = true, modifier = Modifier.fillMaxWidth(), textStyle = MaterialTheme.typography.bodyLarge,
+                )
+                if (initials.isNotBlank()) {
+                    Text(stringResource(R.string.intro_initials_preview, ReferralMapper.initials(initials)), style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            ChoiceRow(stringResource(R.string.intro_td_no_device), td == TdStatus.TIDAK_ADA_ALAT) { td = TdStatus.TIDAK_ADA_ALAT }
-            ChoiceRow(stringResource(R.string.intro_td_not_yet), td == TdStatus.BELUM_DIPERIKSA) { td = TdStatus.BELUM_DIPERIKSA }
-
+            SectionCard(stringResource(if (nifas) R.string.intro_hari else R.string.intro_usia)) {
+                OutlinedTextField(
+                    value = usia, onValueChange = { usia = it.filter(Char::isDigit).take(2); usiaUnknown = false },
+                    label = { Text(stringResource(if (nifas) R.string.intro_hari_label else R.string.intro_usia_weeks)) },
+                    supportingText = if (nifas) ({ Text(stringResource(R.string.intro_hari_hint, ReferralMapper.MAX_HARI_NIFAS)) }) else null,
+                    singleLine = true, enabled = !usiaUnknown,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    isError = !usiaOk && usia.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth(), textStyle = MaterialTheme.typography.bodyLarge,
+                )
+                if (nifas && !usiaOk && usiaInt != null) {
+                    Text(stringResource(R.string.intro_hari_too_late, ReferralMapper.MAX_HARI_NIFAS), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                }
+                ChoiceRow(stringResource(if (nifas) R.string.intro_hari_unknown else R.string.intro_usia_unknown), usiaUnknown) { usiaUnknown = !usiaUnknown; if (usiaUnknown) usia = "" }
+            }
+            SectionCard(stringResource(R.string.intro_td)) {
+                ChoiceRow(stringResource(R.string.intro_td_measured), td == TdStatus.TERUKUR) { td = TdStatus.TERUKUR }
+                if (td == TdStatus.TERUKUR) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = sys, onValueChange = { sys = it.filter(Char::isDigit).take(3) },
+                            label = { Text(stringResource(R.string.intro_sys)) }, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f), textStyle = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text("/", style = MaterialTheme.typography.headlineSmall)
+                        OutlinedTextField(
+                            value = dia, onValueChange = { dia = it.filter(Char::isDigit).take(3) },
+                            label = { Text(stringResource(R.string.intro_dia)) }, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f), textStyle = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                    if (!bpOk && sys.isNotEmpty() && dia.isNotEmpty()) {
+                        Text(stringResource(R.string.intro_td_implausible), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+                ChoiceRow(stringResource(R.string.intro_td_no_device), td == TdStatus.TIDAK_ADA_ALAT) { td = TdStatus.TIDAK_ADA_ALAT }
+                ChoiceRow(stringResource(R.string.intro_td_not_yet), td == TdStatus.BELUM_DIPERIKSA) { td = TdStatus.BELUM_DIPERIKSA }
+            }
             BigButton(
-                stringResource(R.string.intro_next), enabled = usiaOk && bpOk && initialsOk,
+                if (vm.examBusy) "Menyimpan…" else stringResource(R.string.intro_next), enabled = !vm.examBusy && usiaOk && bpOk && initialsOk,
                 onClick = {
                     vm.setIntro(initials, if (usiaUnknown) null else usiaInt, td, sys.toIntOrNull(), dia.toIntOrNull())
                 },
             )
+            vm.examError?.let { Disclaimer(it) }
             if (!(usiaOk && bpOk && initialsOk)) {
                 Text(stringResource(if (nifas) R.string.intro_fill_all_nifas else R.string.intro_fill_all), style = MaterialTheme.typography.bodySmall)
             }
@@ -258,11 +323,10 @@ fun ExamIntroScreen(vm: AppViewModel) {
 @Composable
 private fun ChoiceRow(text: String, selected: Boolean, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(onClick = onClick)
-            .semantics { role = SemanticsRole.RadioButton },
+        Modifier.fillMaxWidth().heightIn(min = 52.dp).selectable(selected = selected, role = SemanticsRole.RadioButton, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(selected = selected, onClick = onClick)
+        RadioButton(selected = selected, onClick = null, modifier = Modifier.size(48.dp))
         Text(text, style = MaterialTheme.typography.bodyLarge)
     }
 }
@@ -294,20 +358,25 @@ fun questionIcon(key: String): ImageVector = when (key) {
 fun QuestionScreen(vm: AppViewModel, index: Int) {
     val q = vm.questions.getOrNull(index) ?: return
     val total = vm.questions.size
-    var bleedingSub by remember(index) { mutableStateOf(false) }
+    var bleedingSub by rememberSaveable(index) { mutableStateOf(false) }
+    BackHandler(enabled = bleedingSub) { bleedingSub = false }
     val critical = vm.examEngine?.isCritical(q, vm.exam.usiaKehamilanMinggu) ?: false
 
     Column(Modifier.fillMaxSize()) {
-        BundaTopBar(stringResource(R.string.question_progress, index + 1, total), onBack = { vm.back() })
+        BundaTopBar(stringResource(R.string.question_progress, index + 1, total), onBack = { if (bleedingSub) bleedingSub = false else vm.back() })
         LinearProgressIndicator(progress = { (index + 1f) / total }, modifier = Modifier.fillMaxWidth().height(8.dp), color = Coral)
         Column(
             Modifier.verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Icon(questionIcon(q.icon), contentDescription = null, tint = Teal, modifier = Modifier.size(88.dp).align(Alignment.CenterHorizontally))
+            Icon(questionIcon(q.icon), contentDescription = null, tint = Teal, modifier = Modifier
+                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(24.dp)).padding(20.dp).size(48.dp))
             Text(q.prompt, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
             if (q.hint.isNotBlank()) Text(q.hint, style = MaterialTheme.typography.bodyLarge)
             if (critical) Text(stringResource(R.string.question_critical), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Jawaban tersimpan otomatis. Anda dapat kembali untuk memperbaiki jawaban.", style = MaterialTheme.typography.bodySmall)
+            vm.examError?.let { Disclaimer(it) }
+            if (vm.examBusy) Text("Menyimpan jawaban…", style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(4.dp))
 
             if (q.code == id.bundasiaga.rules.GJN) {
@@ -344,15 +413,16 @@ fun ResultScreen(vm: AppViewModel) {
     val h = vm.hasil ?: return
     val cfg = vm.examEngine?.config ?: return
     Column(Modifier.fillMaxSize()) {
-        BundaTopBar(stringResource(R.string.result_title), onBack = { vm.resetTo(Screen.Home) })
+        BundaTopBar(stringResource(R.string.result_title), onBack = { vm.back() })
         Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.result_signal_label), style = MaterialTheme.typography.bodyMedium)
             LevelBanner(h.level)
             Text(stringResource(R.string.result_patient, vm.patientCode), style = MaterialTheme.typography.titleMedium)
-            if (cfg.fase == Fase.NIFAS) MockLabel(stringResource(R.string.fase_nifas_chip))
+            vm.resultCreatedAt?.let { Text("Diperiksa ${formatTime(it)}", style = MaterialTheme.typography.bodySmall) }
+            if (cfg.fase == Fase.NIFAS) StatusLabel(stringResource(R.string.fase_nifas_chip))
 
             SectionCard(stringResource(R.string.result_why)) {
-                if (h.aturanTerpicu.isEmpty()) Text(stringResource(R.string.result_no_rules), style = MaterialTheme.typography.bodyLarge)
+                if (h.aturanTerpicu.isEmpty()) Text(if (h.statusAturan == "Arsip") "Rincian aturan tidak tersimpan pada arsip versi sebelumnya." else stringResource(R.string.result_no_rules), style = MaterialTheme.typography.bodyLarge)
                 h.aturanTerpicu.forEach { hit ->
                     Column {
                         Text(hit.alasan, style = MaterialTheme.typography.bodyLarge)
@@ -367,8 +437,9 @@ fun ResultScreen(vm: AppViewModel) {
             }
             SectionCard(stringResource(R.string.result_advice)) { h.saran.forEach { Bullet(it) } }
 
+            if (vm.draftFailed) Disclaimer(stringResource(R.string.draft_error))
             if (h.level != Level.HIJAU) {
-                BigButton(stringResource(R.string.result_send), onClick = { vm.openConfirm() }, icon = Icons.AutoMirrored.Filled.Send, color = if (h.level == Level.MERAH) MerahBg else Teal)
+                BigButton(stringResource(R.string.result_send), enabled = !vm.draftBusy, onClick = { vm.openConfirm() }, icon = Icons.AutoMirrored.Filled.Send, color = if (h.level == Level.MERAH) MerahBg else Teal)
             } else {
                 SecondaryButton(stringResource(R.string.result_send_anyway), onClick = { vm.openConfirm() }, icon = Icons.AutoMirrored.Filled.Send)
             }

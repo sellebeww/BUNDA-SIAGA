@@ -50,6 +50,11 @@ internet, dengan gateway puskesmas dan dasbor dinkes opsional. Bukan alat diagno
 
 ## Berikutnya (urut prioritas)
 
+Audit UI dan teknis 30 September 2026: [docs/UI_AUDIT.md](docs/UI_AUDIT.md).
+Beranda, pengaturan, formulir, dan kotak masuk diperbarui; draf rujukan bisa dilanjutkan,
+navigasi subpertanyaan diperbaiki, dan dasbor diperkuat terhadap injeksi atribut HTML.
+Validasi klinis dan uji perangkat fisik tetap belum selesai.
+
 Daftar lengkap tugas non-kode, dengan langkahnya: [docs/LANGKAH_ANDA.md](docs/LANGKAH_ANDA.md).
 
 1. Uji 2 HP fisik (P1–P20 di `docs/MANUAL_TEST.md`), termasuk HP RAM 2 GB dan HP Xiaomi/Oppo (penghemat baterai).

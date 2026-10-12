@@ -66,18 +66,6 @@ class SmsTransport(private val context: Context) : Transport {
             .putExtra(SmsResultReceiver.EXTRA_ATTEMPT, attempt)
 }
 
-/**
- * Membungkus transport sungguhan. Pada mode simulasi (diberi label jelas di layar) ia bisa
- * berpura-pura tidak ada sinyal, sehingga perilaku antri dan kirim ulang otomatis bisa
- * diperlihatkan sesuai permintaan. Saat simulasi mati, ia adalah transport sungguhan tanpa perubahan.
- */
-class SimAwareTransport(context: Context, private val settings: Settings) : Transport {
-    private val real = SmsTransport(context)
-    override fun submit(localId: Long, attempt: Int, destination: String, body: String): SubmitResult =
-        if (settings.simulationMode && settings.simulateNoService) SubmitResult.Failed(SendError.NO_SERVICE)
-        else real.submit(localId, attempt, destination, body)
-}
-
 class SmsResultReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val app = context.app
@@ -173,7 +161,7 @@ class SmsReceiver : BroadcastReceiver() {
                 is InboxEvent.CapacityUpdated -> {
                     val u = e.update
                     app.metric("capacity_received", null, "${u.faskesId} ${u.status.name}")
-                    val name = app.faskes?.faskes?.firstOrNull { it.id == u.faskesId }?.nama ?: u.faskesId
+                    val name = app.db.facilities().all().firstOrNull { it.id == u.faskesId }?.name ?: u.faskesId
                     notify(
                         app, BundaApp.CH_CAPACITY, (3_000_000 + u.faskesId.hashCode() % 100_000),
                         app.getString(R.string.notif_capacity_title, name), u.status.label,
